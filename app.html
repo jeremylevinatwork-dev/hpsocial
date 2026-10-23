@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HPSocial — Hospitality Professionals Social</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif; background:#0a1a2c; color:#12263f; }
+  #col { max-width:560px; margin:0 auto; min-height:100vh; background:#eef2f7; display:flex; flex-direction:column; box-shadow:0 0 60px rgba(0,0,0,.5); }
+  /* header */
+  .appbar { background:linear-gradient(135deg,#0d2138,#16324f); color:#fff; padding:14px 16px 12px; display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:40; }
+  .appbar img { width:38px; height:38px; border-radius:10px; }
+  .appbar .t { font-family:Georgia,serif; font-weight:700; font-size:23px; }
+  .appbar .t b { color:#c9a227; }
+  .appbar .who { margin-left:auto; text-align:right; font-size:12px; color:#aebfd2; font-weight:700; line-height:1.35; }
+  .appbar .who b { color:#fff; font-size:13.5px; }
+  .sync { font-size:11px; font-weight:800; padding:6px 16px; background:#dbe5ef; color:#54687e; }
+  .sync.off { background:#f6ddb8; color:#7a4a12; }
+  /* gate */
+  .gate { padding:26px 20px 40px; }
+  .gate .mark { width:86px; height:86px; border-radius:22px; display:block; margin:6px auto 12px; box-shadow:0 12px 26px rgba(13,33,56,.3); }
+  .gate h1 { font-family:Georgia,serif; text-align:center; font-size:36px; }
+  .gate h1 b { color:#a8842a; }
+  .gate .sub { text-align:center; color:#54687e; font-weight:700; letter-spacing:2.5px; font-size:11.5px; text-transform:uppercase; margin-top:4px; }
+  .gate .tag { text-align:center; font-family:Georgia,serif; font-style:italic; color:#29425e; margin-top:12px; font-size:17px; }
+  .card { background:#fff; border-radius:18px; padding:18px; margin-top:18px; box-shadow:0 3px 14px rgba(13,33,56,.09); }
+  .tabs { display:flex; gap:8px; }
+  .tabs button { flex:1; border:0; border-radius:12px; padding:11px; font-size:15px; font-weight:900; background:#e3eaf2; color:#29425e; cursor:pointer; }
+  .tabs button.on { background:#0d2138; color:#fff; }
+  label.f { display:block; font-size:12px; font-weight:900; letter-spacing:1px; text-transform:uppercase; color:#8496ab; margin:14px 0 6px; }
+  input, select, textarea { width:100%; border:1.5px solid #cfdce9; border-radius:12px; padding:12px; font-size:16px; font-family:inherit; background:#fbfcfe; color:#12263f; }
+  input:focus, select:focus, textarea:focus { outline:2px solid #c9a227; border-color:#c9a227; }
+  textarea { resize:vertical; min-height:64px; }
+  .bigbtn { width:100%; border:0; border-radius:13px; padding:14px; font-size:16.5px; font-weight:900; background:#c9a227; color:#12263f; cursor:pointer; margin-top:16px; }
+  .bigbtn:active { transform:scale(.99); }
+  .ghostbtn { width:100%; border:1.5px solid #b9c9da; border-radius:13px; padding:12px; font-size:15px; font-weight:800; background:#fff; color:#29425e; cursor:pointer; margin-top:10px; }
+  .err { color:#b3261e; font-weight:700; font-size:14px; margin-top:10px; text-align:center; }
+  .hint { color:#8496ab; font-size:13px; text-align:center; margin-top:12px; line-height:1.5; }
+  /* hotel search */
+  .hresults { border:1.5px solid #cfdce9; border-top:0; border-radius:0 0 12px 12px; max-height:260px; overflow:auto; background:#fff; }
+  .hresults div { padding:11px 12px; border-top:1px solid #eef2f7; cursor:pointer; }
+  .hresults div:active, .hresults div:hover { background:#fdf6e0; }
+  .hresults .hn { font-weight:800; font-size:15px; }
+  .hresults .hm { color:#8496ab; font-size:12.5px; font-weight:700; }
+  .hpicked { background:#fdf6e0; border:1.5px solid #c9a227; border-radius:12px; padding:11px 12px; font-weight:800; }
+  .hpicked .hm { color:#7a5b12; font-size:12.5px; font-weight:700; }
+  .hpicked button { float:right; border:0; background:none; color:#a8842a; font-weight:900; font-size:14px; cursor:pointer; }
+  /* views */
+  .view { padding:12px 12px 86px; flex:1; }
+  .composer { background:#fff; border-radius:16px; padding:13px; box-shadow:0 2px 8px rgba(13,33,56,.07); }
+  .chips { display:flex; gap:7px; margin-bottom:10px; }
+  .chips button { border:1.5px solid #cfdce9; background:#fff; border-radius:999px; padding:6px 13px; font-size:13.5px; font-weight:800; color:#54687e; cursor:pointer; }
+  .chips button.on { background:#0d2138; color:#fff; border-color:#0d2138; }
+  .chips button.on.gold { background:#c9a227; color:#12263f; border-color:#c9a227; }
+  .crow { display:flex; gap:9px; margin-top:9px; }
+  .crow select { flex:1; }
+  .crow .post { flex:0 0 auto; border:0; border-radius:11px; padding:0 22px; background:#c9a227; color:#12263f; font-weight:900; font-size:15px; cursor:pointer; }
+  .filters { display:flex; gap:7px; margin:13px 0 3px; overflow-x:auto; padding-bottom:2px; }
+  .filters button { white-space:nowrap; border:0; background:#dbe5ef; color:#29425e; border-radius:999px; padding:7px 14px; font-size:13.5px; font-weight:800; cursor:pointer; }
+  .filters button.on { background:#0d2138; color:#fff; }
+  .post2 { background:#fff; border-radius:16px; padding:14px; margin-top:11px; box-shadow:0 2px 8px rgba(13,33,56,.07); }
+  .post2.shout { border:1.5px solid #c9a227; background:linear-gradient(180deg,#fffdf4,#fff); }
+  .post2.jobp { border:1.5px solid #c9a227; background:linear-gradient(120deg,#fdf6e0,#fffaf0); }
+  .pwho { display:flex; gap:10px; align-items:center; }
+  .ava { overflow:hidden; width:44px; height:44px; border-radius:50%; flex:0 0 auto; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:16px; color:#fff; }
+  .ava.sm { width:34px; height:34px; font-size:12.5px; }
+  .avaw { position:relative; display:inline-block; flex:0 0 auto; line-height:0; }
+  .vchk { position:absolute; right:-3px; bottom:-3px; width:16px; height:16px; border-radius:50%; background:#2e9e4f; color:#fff; font-size:10.5px; font-weight:900; display:flex; align-items:center; justify-content:center; border:2px solid #fff; line-height:1; z-index:2; }
+  .vchk.big { width:25px; height:25px; font-size:14px; right:1px; bottom:3px; }
+  .pnm { font-weight:900; font-size:16px; }
+  .pmeta { color:#8496ab; font-size:12.5px; font-weight:600; line-height:1.35; }
+  .pdel { margin-left:auto; border:0; background:none; color:#b3261e; font-size:16px; cursor:pointer; padding:4px; }
+  .ptxt { font-size:15.5px; line-height:1.5; margin-top:9px; white-space:pre-wrap; word-wrap:break-word; }
+  .jobtag { display:inline-block; background:#c9a227; color:#12263f; font-size:11px; font-weight:900; letter-spacing:1.2px; padding:3px 9px; border-radius:999px; margin-bottom:6px; }
+  .jobrole { font-family:Georgia,serif; font-size:19px; font-weight:700; }
+  .shoutto { color:#7a5b12; font-weight:800; font-size:13.5px; margin-top:2px; }
+  .pbar { display:flex; gap:16px; margin-top:11px; padding-top:10px; border-top:1px solid #e6ecf3; font-size:13.5px; font-weight:800; color:#54687e; align-items:center; }
+  .pbar button { border:0; background:none; font:inherit; color:inherit; cursor:pointer; padding:0; }
+  .pbar .liked { color:#a8842a; }
+  .pbar .rep { margin-left:auto; font-size:12px; color:#a8b8c8; }
+  .intbtn { margin-left:auto; border:0; background:#0d2138; color:#fff; border-radius:9px; padding:7px 14px; font-weight:800; font-size:13px; cursor:pointer; }
+  .intbtn.on { background:#2e7d32; }
+  .likenames { font-size:12px; color:#a8842a; font-weight:700; margin-top:6px; }
+  .cmts { margin-top:9px; }
+  .cmt { display:flex; gap:8px; margin-top:8px; font-size:14px; line-height:1.45; }
+  .cmt .cb { background:#f2f5f9; border-radius:12px; padding:7px 11px; flex:1; }
+  .cmt .cb b { font-size:13.5px; }
+  .cmt .cw { color:#8496ab; font-size:11.5px; font-weight:700; }
+  .cmt .cdel { border:0; background:none; color:#b3261e; font-size:13px; cursor:pointer; align-self:flex-start; }
+  .cbox { display:flex; gap:8px; margin-top:10px; }
+  .cbox input { flex:1; padding:9px 12px; font-size:14.5px; border-radius:999px; }
+  .cbox button { border:0; background:#0d2138; color:#fff; border-radius:999px; padding:0 17px; font-weight:800; font-size:14px; cursor:pointer; }
+  /* people + profile */
+  .member { background:#fff; border-radius:16px; padding:13px; margin-top:10px; display:flex; gap:11px; align-items:center; box-shadow:0 2px 8px rgba(13,33,56,.06); cursor:pointer; }
+  .member.paused { opacity:.62; }
+  .badge { display:inline-block; font-size:10.5px; font-weight:900; letter-spacing:.8px; padding:2.5px 8px; border-radius:999px; text-transform:uppercase; }
+  .badge.act { background:#dcefe0; color:#2e7d32; }
+  .badge.bet { background:#f6ddb8; color:#7a4a12; }
+  .badge.pau { background:#e3e7ec; color:#54687e; }
+  .connbtn { margin-left:auto; border:0; border-radius:10px; padding:9px 15px; font-weight:900; font-size:13.5px; background:#c9a227; color:#12263f; cursor:pointer; flex:0 0 auto; }
+  .connbtn.on { background:#e3eaf2; color:#54687e; }
+  .cover { height:118px; border-radius:18px 18px 0 0; background:linear-gradient(120deg,#0d2138,#1d4066 60%,#c9a227 160%); margin:-12px -12px 0; }
+  .profcard { background:#fff; border-radius:0 0 18px 18px; padding:0 16px 16px; box-shadow:0 2px 8px rgba(13,33,56,.08); }
+  .bigava { overflow:hidden; width:82px; height:82px; border-radius:50%; border:4px solid #fff; margin-top:-41px; display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:900; color:#fff; position:relative; }
+  .profname { font-family:Georgia,serif; font-size:25px; font-weight:700; margin-top:7px; }
+  .stats { display:flex; margin-top:13px; border-top:1px solid #e6ecf3; padding-top:11px; }
+  .stats div { flex:1; text-align:center; }
+  .stats b { font-size:19px; display:block; }
+  .stats span { font-size:10px; color:#8496ab; font-weight:800; letter-spacing:.5px; text-transform:uppercase; }
+  .secttl { font-size:12.5px; letter-spacing:1.5px; color:#a8842a; text-transform:uppercase; font-weight:900; margin:18px 0 4px; }
+  .pausedbox { background:#12263f; color:#fff; border-radius:18px; padding:24px 20px; text-align:center; margin-top:16px; }
+  .pausedbox h2 { font-family:Georgia,serif; font-size:24px; margin-bottom:8px; }
+  .pausedbox p { color:#aebfd2; line-height:1.55; font-size:15px; }
+  /* tabbar */
+  .tabbar { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:560px; background:#fff; border-top:1px solid #dbe5ef; display:flex; z-index:50; padding-bottom:env(safe-area-inset-bottom); }
+  .tabbar button { flex:1; border:0; background:none; padding:9px 0 11px; font-size:11px; font-weight:800; color:#8496ab; cursor:pointer; }
+  .tabbar button .ic { display:block; font-size:21px; margin-bottom:1px; }
+  .tabbar button.on { color:#a8842a; }
+  /* Facebook-style gate */
+  .gatefb { padding:30px 18px 44px; }
+  .gatefb .mark { width:76px; height:76px; border-radius:20px; display:block; margin:4px auto 10px; box-shadow:0 10px 24px rgba(13,33,56,.28); }
+  .gatefb h1 { font-family:Georgia,serif; text-align:center; font-size:36px; }
+  .gatefb h1 b { color:#a8842a; }
+  .gatefb .tag { text-align:center; color:#29425e; font-size:16.5px; margin-top:6px; line-height:1.45; }
+  .fbcard { background:#fff; border-radius:12px; box-shadow:0 2px 12px rgba(13,33,56,.14), 0 8px 30px rgba(13,33,56,.08); padding:20px 18px 22px; margin-top:22px; }
+  .fbcard h2 { font-size:21px; text-align:center; font-weight:800; }
+  .fbcard .fsub { text-align:center; color:#8496ab; font-size:14px; margin-top:3px; }
+  .fbcard input, .fbcard select, .fbcard textarea { margin-top:12px; border-radius:9px; }
+  .fblogin { width:100%; border:0; border-radius:9px; padding:13px; font-size:17.5px; font-weight:900; background:#0d2138; color:#fff; cursor:pointer; margin-top:16px; }
+  .fbcreate { display:block; width:fit-content; margin:4px auto 0; border:0; border-radius:9px; padding:12px 22px; font-size:16px; font-weight:900; background:#c9a227; color:#12263f; cursor:pointer; }
+  .fblink { display:block; text-align:center; color:#a8842a; font-weight:700; font-size:14.5px; margin-top:14px; text-decoration:none; cursor:pointer; }
+  .fbdiv { display:flex; align-items:center; gap:12px; margin:20px 0 16px; color:#8496ab; font-size:13px; font-weight:700; }
+  .fbdiv:before, .fbdiv:after { content:''; flex:1; border-top:1px solid #dbe5ef; }
+  .selfiebox { border:2px dashed #c9a227; background:#fffdf4; border-radius:14px; padding:14px; margin-top:14px; text-align:center; }
+  .selfiebox img { width:110px; height:110px; border-radius:50%; object-fit:cover; display:block; margin:0 auto 8px; border:3px solid #c9a227; }
+  .selfiebox .sb-t { font-weight:900; font-size:15px; }
+  .selfiebox .sb-s { color:#54687e; font-size:13px; margin-top:3px; line-height:1.45; }
+  .selfiebox button { border:0; border-radius:10px; padding:11px 20px; font-weight:900; font-size:14.5px; background:#0d2138; color:#fff; cursor:pointer; margin-top:9px; }
+  .hhead { display:flex; gap:12px; align-items:center; background:#0d2138; color:#fff; border-radius:16px; padding:14px 16px; }
+  .hhead .hbell { width:46px; height:46px; border-radius:50%; background:#c9a227; display:flex; align-items:center; justify-content:center; font-size:23px; flex:none; }
+  .hhead .ht { font-weight:900; font-size:17px; }
+  .hhead .hs { color:#b8c7d9; font-size:12.5px; margin-top:1px; }
+  .hmsgs { display:flex; flex-direction:column; gap:9px; margin:14px 0; }
+  .hbub { max-width:86%; padding:11px 13px; border-radius:15px; font-size:14.5px; line-height:1.5; white-space:pre-wrap; word-break:break-word; }
+  .hbub.bot { background:#fff; border:1px solid #dfe6ee; border-left:4px solid #c9a227; align-self:flex-start; border-bottom-left-radius:5px; }
+  .hbub.me { background:#0d2138; color:#fff; align-self:flex-end; border-bottom-right-radius:5px; }
+  .hchips { display:flex; flex-wrap:wrap; gap:7px; margin:4px 0 10px; }
+  .hchips button { border:1.5px solid #c9a227; background:#fffdf4; color:#7a5b12; border-radius:999px; padding:8px 12px; font-weight:800; font-size:13px; cursor:pointer; }
+  .hrow { display:flex; gap:8px; }
+  .hrow input { flex:1; border:1.5px solid #d9dee5; border-radius:12px; padding:12px; font-size:15px; min-width:0; }
+  .hrow button { border:0; border-radius:12px; padding:12px 18px; font-weight:900; background:#c9a227; color:#231a00; cursor:pointer; }
+  .tabbar button { position:relative; }
+  .nbadge { position:absolute; top:4px; right:calc(50% - 19px); min-width:17px; height:17px; border-radius:9px; background:#d33f2e; color:#fff; font-size:10.5px; font-weight:900; display:flex; align-items:center; justify-content:center; padding:0 4px; }
+  .hback { display:inline-block; margin-bottom:10px; color:#29425e; font-weight:800; font-size:14px; cursor:pointer; }
+  .fbjoin { width:100%; border:0; border-radius:9px; padding:13px; font-size:16.5px; font-weight:900; background:#c9a227; color:#12263f; cursor:pointer; margin-top:16px; }
+  .empty { text-align:center; color:#8496ab; padding:34px 20px; font-size:15px; line-height:1.6; }
+  .ava img, .bigava img { width:100%; height:100%; object-fit:cover; display:block; }
+  .foot { text-align:center; color:#8496ab; font-size:12px; padding:6px 0 16px; font-weight:700; }
+
+  /* opening splash — ringing bell */
+  #splash { position:fixed; inset:0; z-index:999; background:linear-gradient(160deg,#0d2138,#122e4d); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; transition:opacity .45s ease; cursor:pointer; }
+  #splash.gone { opacity:0; pointer-events:none; }
+  #splash .ringwrap { position:relative; width:158px; height:158px; display:flex; align-items:center; justify-content:center; }
+  #splash .ringwrap:before, #splash .ringwrap:after { content:''; position:absolute; inset:0; border-radius:50%; border:2px solid rgba(201,162,39,.55); animation:hpsPing 1.5s ease-out infinite; }
+  #splash .ringwrap:after { animation-delay:.5s; }
+  @keyframes hpsPing { 0% { transform:scale(.55); opacity:.9; } 100% { transform:scale(1.28); opacity:0; } }
+  #splashBell { width:118px; height:118px; border-radius:28px; box-shadow:0 16px 40px rgba(0,0,0,.45); transform-origin:50% 6%; animation:hpsSwing 1.5s ease-in-out; }
+  @keyframes hpsSwing { 0% { transform:rotate(0deg); } 12% { transform:rotate(17deg); } 30% { transform:rotate(-14deg); } 48% { transform:rotate(10deg); } 64% { transform:rotate(-7deg); } 80% { transform:rotate(4deg); } 100% { transform:rotate(0deg); } }
+  #splash .st { font-family:Georgia,serif; font-size:34px; color:#fff; }
+  #splash .st b { color:#c9a227; }
+  #splash .ss { color:#b8c7d9; font-size:14.5px; font-weight:700; letter-spacing:.4px; }
+  @media (prefers-reduced-motion: reduce) { #splashBell { animation:none; } #splash .ringwrap:before, #splash .ringwrap:after { animation:none; display:none; } }
+</style>
+</head>
+<body>
+<div id="splash"><div class="ringwrap"><img id="splashBell" src="bell-mark.png" alt=""></div><div class="st"><b>HPS</b>ocial</div><div class="ss">Where Hospitality Connects</div></div>
+<div id="col">
+  <div class="appbar"><img src="bell-mark.png" alt=""><div class="t"><b>HPS</b>ocial</div><div class="who" id="whoami"></div></div>
+  <div class="sync" id="syncbadge">● Connecting…</div>
+  <div id="main"></div>
+</div>
+
+<script>
+var SB_URL = 'https://qxqrwusaynfqadjfqswe.supabase.co';
+var SB_KEY = 'sb_publishable_2ba9yzEA89uqXHJ6v-_cQg_AmwwEfFF';
+var ROW = 'hpsocial-state';
+
+var ROLES = ['Front Desk','Housekeeping','Food & Beverage','Culinary / Kitchen','Concierge','Security','Engineering & Maintenance','Lifeguard & Recreation','Valet & Transportation','Spa & Wellness','Sales & Events','Management','Other'];
+var AVCOLORS = ['#7a4a12','#28536b','#a03c50','#285b2a','#6b2848','#4a3a7a','#7a5b12','#1d5c6e'];
+var SEED_HOTELS = [
+ ['Hilton Orlando','Hilton','Orlando, FL','United States'],['Marriott Orlando World Center','Marriott','Orlando, FL','United States'],
+ ['Loews Hotels & Co','Loews Hotels & Co','Orlando, FL','United States'],
+ ['Hard Rock Hotel Orlando','Hard Rock','Orlando, FL','United States'],['Walt Disney World Swan','Westin','Orlando, FL','United States'],
+ ['Fontainebleau Miami Beach','Independent','Miami Beach, FL','United States'],['The Setai Miami Beach','Independent','Miami Beach, FL','United States'],
+ ['Caesars Palace','Caesars','Las Vegas, NV','United States'],
+ ['The Plaza New York','Fairmont','New York, NY','United States'],['The Ritz-Carlton New York','Ritz-Carlton','New York, NY','United States'],
+ ['Waldorf Astoria Beverly Hills','Hilton','Beverly Hills, CA','United States'],['Fairmont San Francisco','Fairmont','San Francisco, CA','United States'],
+['Hilton Hawaiian Village','Hilton','Honolulu, HI','United States'],
+ ['Grand Hyatt Nashville','Hyatt','Nashville, TN','United States'],['The Roosevelt New Orleans','Hilton','New Orleans, LA','United States'],
+ ['The Savoy','Fairmont','London','United Kingdom'],['The Ritz London','Ritz-Carlton','London','United Kingdom'],
+ ['Claridge\u2019s','Maybourne','London','United Kingdom'],['The Langham London','Langham','London','United Kingdom'],
+ ['The Balmoral','Rocco Forte','Edinburgh','United Kingdom'],['Kimpton Blythswood Square','IHG','Glasgow','United Kingdom'],
+ ['Sandals Montego Bay','Sandals','Montego Bay','Jamaica'],['Sandals Negril','Sandals','Negril','Jamaica'],
+ ['Half Moon','Independent','Montego Bay','Jamaica'],['Hyatt Ziva Rose Hall','Hyatt','Montego Bay','Jamaica'],
+ ['Secrets Wild Orchid','Hyatt','Montego Bay','Jamaica'],['Couples Tower Isle','Couples','Ocho Rios','Jamaica'],
+ ['The Peninsula Shanghai','Peninsula','Shanghai','China'],['Waldorf Astoria Shanghai','Hilton','Shanghai','China'],
+ ['The Peninsula Beijing','Peninsula','Beijing','China'],['Waldorf Astoria Beijing','Hilton','Beijing','China'],
+ ['The Peninsula Hong Kong','Peninsula','Hong Kong','China'],['The Ritz-Carlton Hong Kong','Ritz-Carlton','Hong Kong','China'],
+ ['Mandarin Oriental Sanya','Mandarin Oriental','Sanya','China'],['Rosewood Guangzhou','Rosewood','Guangzhou','China'],
+ ['Atlantis The Palm','Independent','Dubai','United Arab Emirates'],['Burj Al Arab Jumeirah','Jumeirah','Dubai','United Arab Emirates'],
+ ['Jumeirah Beach Hotel','Jumeirah','Dubai','United Arab Emirates'],['Soneva Fushi','Soneva','Baa Atoll','Maldives'],
+ ['Conrad Maldives Rangali Island','Hilton','Rangali Island','Maldives'],['The Ritz-Carlton Paris','Ritz-Carlton','Paris','France'],
+ ['H\u00f4tel de Crillon','Rosewood','Paris','France'],['Fairmont Royal York','Fairmont','Toronto','Canada'],
+ ['Park Hyatt Sydney','Hyatt','Sydney','Australia'],['The Peninsula Tokyo','Peninsula','Tokyo','Japan'],
+ ['Four Seasons Resort Bali at Jimbaran Bay','Four Seasons','Bali','Indonesia'],['The Oberoi Mumbai','Oberoi','Mumbai','India'],
+ ['Grand Hotel Golf Resort & Spa','','', 'United States'],
+ ['Hotel Captain Cook','','', 'United States'],
+ ['The Phoenician','','', 'United States'],
+ ['1905 Crescent Hotel & Spa','','', 'United States'],
+ ['The Beverly Hills Hotel','','', 'United States'],
+ ['The Broadmoor','','', 'United States'],
+ ['Mayflower Inn & Spa','','', 'United States'],
+ ['Hotel du Pont','','', 'United States'],
+ ['The Ritz-Carlton','','', 'United States'],
+ ['The Cloister at Sea Island','','', 'United States'],
+ ['Four Seasons Resort Hualālai','','', 'United States'],
+ ['The Coeur d\'Alene Resort','','', 'United States'],
+ ['The Drake Hotel','','', 'United States'],
+ ['West Baden Springs Hotel','','', 'United States'],
+ ['Hotel Pattee','','', 'United States'],
+ ['The Eldridge Hotel','','', 'United States'],
+ ['21c Museum Hotel','','', 'United States'],
+ ['Hotel Monteleone','','', 'United States'],
+ ['White Barn Inn','','', 'United States'],
+ ['Inn at Perry Cabin','','', 'United States'],
+ ['Mandarin Oriental','','', 'United States'],
+ ['Grand Hotel','','', 'United States'],
+ ['The Saint Paul Hotel','','', 'United States'],
+ ['Beau Rivage Resort & Casino','','', 'United States'],
+ ['The Raphael Hotel','','', 'United States'],
+ ['The Resort at Paws Up','','', 'United States'],
+ ['The Magnolia Hotel','','', 'United States'],
+ ['Bellagio Resort & Casino','','', 'United States'],
+ ['Omni Mount Washington Resort','','', 'United States'],
+ ['Borgata Hotel Casino & Spa','','', 'United States'],
+ ['Rosewood Inn of the Anasazi','','', 'United States'],
+ ['Lotte New York Palace','','', 'United States'],
+ ['The Omni Grove Park Inn','','', 'United States'],
+ ['Hotel Donaldson','','', 'United States'],
+ ['21c Museum Hotel','','', 'United States'],
+ ['The Skirvin Hilton','','', 'United States'],
+ ['The Nines','','', 'United States'],
+ ['The Hotel Hershey','','', 'United States'],
+ ['Ocean House','','', 'United States'],
+ ['Wentworth Mansion','','', 'United States'],
+ ['State Game Lodge','','', 'United States'],
+ ['The Peabody','','', 'United States'],
+ ['The Joule','','', 'United States'],
+ ['Amangiri','','', 'United States'],
+ ['The Woodstock Inn & Resort','','', 'United States'],
+ ['The Jefferson Hotel','','', 'United States'],
+ ['The Edgewater Hotel','','', 'United States'],
+ ['The Greenbrier','','', 'United States'],
+ ['The Pfister Hotel','','', 'United States'],
+ ['Amangani','','', 'United States']
+];
+</script>
+<script>
+/* ============ state & sync ============ */
+function uid(p){ return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+var S = null;            /* {members:[], hotels:[], posts:[]} */
+var me = null;           /* my member record */
+var view = 'feed', feedFilter = 'all', profileOf = null;
+var gateTab = 'login', pickedHotel = null, cmpType = 'post';
+var joinPic = null;
+var drafts = {};
+
+function esc(s){ return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function firstName(n){ return (n || '').split(' ')[0]; }
+function initials(n){ var p = (n || '?').trim().split(/\s+/); return (p[0][0] + (p[1] ? p[1][0] : '')).toUpperCase(); }
+function avColor(id){ var h = 0; for (var i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0; return AVCOLORS[h % AVCOLORS.length]; }
+function ago(ts){ var s = Math.max(1, (Date.now() - ts) / 1000 | 0); if (s < 60) return 'now'; var m = s / 60 | 0; if (m < 60) return m + 'm'; var h = m / 60 | 0; if (h < 24) return h + 'h'; var d = h / 24 | 0; if (d < 7) return d + 'd'; return new Date(ts).toLocaleDateString(); }
+function memberById(id){ return S ? S.members.filter(function(m){ return m.id === id; })[0] : null; }
+function hotelById(id){ return S ? S.hotels.filter(function(h){ return h.id === id; })[0] : null; }
+function myHotel(){ return me ? hotelById(me.hotelId) : null; }
+function statusBadge(m){ if (m.status === 'paused') return '<span class="badge pau">Left hospitality</span>'; if (m.status === 'between') return '<span class="badge bet">Between properties</span>'; return '<span class="badge act">In hospitality</span>'; }
+function ava(m, sm){
+  var inner = m.pic ? '<div class="ava' + (sm ? ' sm' : '') + '"><img src="' + m.pic + '" alt=""></div>' : '<div class="ava' + (sm ? ' sm' : '') + '" style="background:' + avColor(m.id) + '">' + esc(initials(m.name)) + '</div>';
+  if (!m.selfie) return inner;
+  return '<span class="avaw">' + inner + '<span class="vchk">\u2713</span></span>';
+}
+
+function seedState(){
+  var hotels = SEED_HOTELS.map(function(h, i){ return { id: 'seed' + i, name: h[0], brand: h[1], city: h[2], country: h[3], verified: true }; });
+  function H(n){ return hotels.filter(function(h){ return h.name === n; })[0].id; }
+  var t = Date.now();
+  var members = [];
+  var posts = [];
+  return { members: members, hotels: hotels, posts: posts, msgs: [] };
+}
+
+async function sbGet(){
+  var h = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
+  var res = await fetch(SB_URL + '/rest/v1/app_records?id=eq.' + ROW + '&select=data', { headers: h });
+  if (!res.ok) throw new Error('read ' + res.status);
+  var rows = await res.json();
+  return (rows.length && rows[0].data) ? rows[0].data : null;
+}
+async function sbSet(data){
+  var h = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' };
+  var res = await fetch(SB_URL + '/rest/v1/app_records', { method: 'POST', headers: h, body: JSON.stringify([{ id: ROW, data: data }]) });
+  if (!res.ok) throw new Error('write ' + res.status);
+}
+function mergePost(lp, cp){
+  var out = (lp.ts >= cp.ts) ? lp : cp;
+  var likesTs = Math.max(lp.likesTs || 0, cp.likesTs || 0);
+  var cSrc = ((lp.commentsTs || 0) >= (cp.commentsTs || 0)) ? lp : cp;
+  out.likes = ((lp.likesTs || 0) >= (cp.likesTs || 0) ? lp : cp).likes || [];
+  out.likesTs = likesTs;
+  out.comments = cSrc.comments || []; out.commentsTs = Math.max(lp.commentsTs || 0, cp.commentsTs || 0);
+  var ints = {}; (lp.interested || []).concat(cp.interested || []).forEach(function(x){ ints[x] = 1; });
+  out.interested = Object.keys(ints);
+  var reps = {}; (lp.reports || []).concat(cp.reports || []).forEach(function(x){ reps[x] = 1; });
+  out.reports = Object.keys(reps);
+  return out;
+}
+function unionState(a, b){
+  if (!a) return b; if (!b) return a;
+  var out = { members: [], hotels: [], posts: [], msgs: [] }, i, m;
+  var mm = {}; a.members.forEach(function(x){ mm[x.id] = x; });
+  b.members.forEach(function(x){ if (!mm[x.id] || (x.u || 0) >= (mm[x.id].u || 0)) mm[x.id] = x; });
+  out.members = Object.keys(mm).map(function(k){ return mm[k]; });
+  var hh = {}; a.hotels.forEach(function(x){ hh[x.id] = x; });
+  b.hotels.forEach(function(x){ if (!hh[x.id]) hh[x.id] = x; });
+  out.hotels = Object.keys(hh).map(function(k){ return hh[k]; });
+  var pp = {}; a.posts.forEach(function(x){ pp[x.id] = x; });
+  b.posts.forEach(function(x){ pp[x.id] = pp[x.id] ? mergePost(pp[x.id], x) : x; });
+  out.posts = Object.keys(pp).map(function(k){ return pp[k]; }).sort(function(x, y){ return y.ts - x.ts; });
+  /* No fake profiles: any legacy demo data is stripped on every sync. */
+  function notDemo(id){ return String(id).indexOf('demo-') !== 0; }
+  out.members = out.members.filter(function(m){ return notDemo(m.id); });
+  out.members.forEach(function(m){ m.connections = (m.connections || []).filter(notDemo); });
+  out.posts = out.posts.filter(function(p){ return notDemo(p.uid); });
+  out.posts.forEach(function(p){
+    p.likes = (p.likes || []).filter(notDemo);
+    p.comments = (p.comments || []).filter(function(c){ return notDemo(c.uid); });
+    p.interested = (p.interested || []).filter(notDemo);
+    p.reports = (p.reports || []).filter(notDemo);
+  });
+  out.hotels = out.hotels.filter(function(h){ return h.name !== 'Loews Portofino Bay Hotel' && h.name !== 'Loews Royal Pacific Resort'; });
+  var gg = {};
+  (a.msgs || []).forEach(function(x){ gg[x.id] = x; });
+  (b.msgs || []).forEach(function(x){
+    if (!gg[x.id]) gg[x.id] = x;
+    else if (x.read && !gg[x.id].read) { var c = Object.assign({}, gg[x.id]); c.read = true; gg[x.id] = c; }
+  });
+  out.msgs = Object.keys(gg).map(function(k){ return gg[k]; }).filter(function(g){ return notDemo(g.from) && notDemo(g.to); }).sort(function(x, y){ return x.ts - y.ts; });
+  if (out.msgs.length > 3000) out.msgs = out.msgs.slice(out.msgs.length - 3000);
+  return out;
+}
+function saveCache(){ try { localStorage.setItem('hps-cache', JSON.stringify(S)); localStorage.setItem('hps-me', me ? me.id : ''); } catch (e) {} }
+function loadCache(){ try { var c = localStorage.getItem('hps-cache'); if (c) S = JSON.parse(c); } catch (e) {} }
+function setBadge(){ var b = document.getElementById('syncbadge'); if (navigator.onLine === false) { b.textContent = '● Offline — showing saved copy, will sync when you are back'; b.className = 'sync off'; } else { b.textContent = '● Synced with the HPSocial cloud'; b.className = 'sync'; } }
+async function pull(){
+  try {
+    var c = await sbGet();
+    if (c) { S = unionState(S, c); if (me) me = memberById(me.id) || me; saveCache(); render(); }
+    setBadge();
+  } catch (e) { var b = document.getElementById('syncbadge'); b.textContent = '● Offline — showing saved copy'; b.className = 'sync off'; }
+}
+async function push(){
+  try { var c = await sbGet(); if (c) S = unionState(S, c); await sbSet(S); saveCache(); setBadge(); if (me) me = memberById(me.id) || me; }
+  catch (e) { var b = document.getElementById('syncbadge'); b.textContent = '● Offline — saved on this device, will sync'; b.className = 'sync off'; }
+}
+
+/* ============ gate ============ */
+function allHotels(){ return S.hotels.slice().sort(function(a, b){ return a.name.localeCompare(b.name); }); }
+function hotelLine(h){ var parts = [h.brand, h.city, h.country].filter(function(x){ return x; }); return '<div class="hn">' + esc(h.name) + '</div><div class="hm">' + esc(parts.join(' · ')) + (h.verified ? '' : ' · awaiting verification') + '</div>'; }
+
+/* ============ Concierge — HPSocial's own AI customer service ============ */
+var gateHelp = false, hpChat = null, hpTyping = false;
+function hpLoad(){
+  if (hpChat) return;
+  try { hpChat = JSON.parse(localStorage.getItem('hps-chat') || 'null'); } catch (e) {}
+  if (!hpChat || !hpChat.length) hpChat = [{ w: 'bot', t: 'Welcome to HPSocial 🛎 I\'m the Concierge — HPSocial\'s own assistant, here around the clock. Ask me anything about using HPSocial, or tap a topic below.' }];
+}
+function hpSave(){ try { localStorage.setItem('hps-chat', JSON.stringify(hpChat.slice(-40))); } catch (e) {} }
+var HP_TOPICS = [
+  { k: ['green', 'check', 'confirm', 'selfie', 'verified', 'verify', 'real person', 'not confirmed', 'badge'], a: 'The green ✓ means a member is confirmed real. Take a selfie when you join — or any time after: Profile → “Take a selfie to confirm”. The photo becomes your profile picture and the ✓ rides next to it everywhere — feed, comments, People. No selfie yet? Your profile shows “Not confirmed” until you take one.' },
+  { k: ['join', 'sign up', 'signup', 'create account', 'new account', 'register'], a: 'Tap “Create new account” on the sign-in screen: your name, email, a password of 12+ characters, your role, and your hotel. The hotel search covers properties worldwide — and if yours is missing, you can add it right there.' },
+  { k: ['forgot', 'password', 'reset', 'locked out', 'log in', 'login', 'sign in'], a: 'Use the email and password you joined with. Password reset by email arrives with the full launch — until then, keep your password somewhere safe.' },
+  { k: ['shout', 'recognition', 'thank', 'praise', 'award'], a: 'Shout-outs are how reputations grow here 🏆 In the composer, tap Shout-out, write it, and choose the crew or one specific member. It lands on their profile under “Shout-outs received” — and it travels with them from property to property.' },
+  { k: ['job', 'hiring', 'opening', 'work', 'career', 'interested', 'apply'], a: 'Tap 💼 Jobs to see openings posted by members across hospitality. To post one: in the composer tap Job, name the role and write the details. See one you like? Tap “I\'m interested” and the poster sees your name.' },
+  { k: ['post', 'feed', 'share', 'write'], a: 'From the Feed, write in the box at the top and tap Post. Filters at the top narrow the feed: Everyone, My property, My country, Shout-outs, or Jobs. Tap 👍 to like and 💬 to comment.' },
+  { k: ['connect', 'people', 'friend', 'network', 'meet'], a: 'People shows hospitality folks across properties and countries. Tap Connect on anyone — you\'re connected both ways. Tap any person to see their profile, hotel, and the shout-outs they\'ve earned.' },
+  { k: ['photo', 'picture', 'avatar', 'image'], a: 'Your profile photo shows on your posts, comments, and in People. Change it any time: Profile → Profile photo. Tip: the selfie you confirm with becomes your photo automatically.' },
+  { k: ['left', 'leave', 'quit', 'between', 'pause', 'paused', 'fired', 'laid off', 'no longer'], a: 'HPSocial travels with you. Profile → “I\'m between properties” keeps full access while you look for your next role. “I left hospitality” pauses your account — locked and hidden, but your connections, shout-outs, and history stay preserved. Back in the industry? Pick your new hotel and everything wakes up.' },
+  { k: ['report', 'fake', 'abuse', 'spam', 'block', 'safety', 'inappropriate'], a: 'Real people only — that\'s the rule here. Tap Report on any post: two reports send it for review and hide it meanwhile. Fake or abusive accounts get removed.' },
+  { k: ['hotel', 'property', 'find my', 'add my', 'missing', 'listed'], a: 'The directory holds hotels worldwide and grows by members. At join, search your hotel by name; if it isn\'t there, tap “Add my hotel” — member-added hotels are flagged until verified.' },
+  { k: ['privacy', 'who sees', 'data', 'sell', 'private'], a: 'Only HPSocial members see the network — your posts, profile, hotel, and shout-outs live inside the community. Your email is never shown on your profile.' },
+  { k: ['cost', 'free', 'price', 'pay', 'subscription'], a: 'HPSocial is free for members. Joining takes a minute and there are no member fees.' },
+  { k: ['delete', 'remove account', 'close account'], a: 'Full account deletion arrives with the app launch. Today, Profile → “I left hospitality” pauses and hides your account while keeping your history safe — and you can return any time.' },
+  { k: ['app', 'download', 'install', 'phone', 'iphone', 'android', 'home screen'], a: 'No download needed — HPSocial runs right in your browser. Tip: use “Add to Home Screen” in your browser menu and it behaves like an app. A native app is on the roadmap.' },
+  { k: ['human', 'person', 'agent', 'contact', 'support', 'email', 'help me'], a: 'I\'m the Concierge, HPSocial\'s automated assistant — fastest for anything about using the app, day or night. Member support by email arrives with the full launch.' },
+  { k: ['what is', 'about', 'hpsocial', 'who made', 'whats this'], a: 'HPSocial — Hospitality Professionals Social — is the social network strictly for hospitality: Facebook-style community plus LinkedIn-style jobs and reputation, only for hotel people, worldwide. Your shout-outs and connections travel with you from property to property.' }
+];
+function hpAnswer(q){
+  var s = ' ' + String(q).toLowerCase() + ' ', best = null, bestScore = 0;
+  HP_TOPICS.forEach(function(t){
+    var score = 0;
+    t.k.forEach(function(k){ if (s.indexOf(k) >= 0) score += k.length; });
+    if (score > bestScore) { bestScore = score; best = t; }
+  });
+  if (best) return best.a;
+  return 'I don\'t have that one yet — I\'m sharpest on HPSocial itself. Ask me about the green check, shout-outs, jobs, connections, profile photos, or what happens if you change properties.';
+}
+function renderHelp(){
+  hpLoad();
+  var h = '<div class="view">'
+    + (gateHelp && !me ? '<a class="hback" onclick="gateHelp=false;render()">← Back to sign in</a>' : '')
+    + '<div class="hhead"><div class="hbell">🛎</div><div><div class="ht">Concierge</div><div class="hs">HPSocial\'s own assistant · answers instantly, day or night</div></div></div>'
+    + '<div class="hmsgs" id="hp-msgs">'
+    + hpChat.map(function(m){ return '<div class="hbub ' + m.w + '">' + esc(m.t) + '</div>'; }).join('')
+    + (hpTyping ? '<div class="hbub bot">···</div>' : '')
+    + '</div>'
+    + '<div class="hchips">'
+    + ['How do I get the green ✓?', 'How do shout-outs work?', 'How do I post a job?', 'I left my job — what happens?', 'Report a problem', 'Forgot my password'].map(function(q){ return '<button onclick="hpChip(\'' + q.replace(/'/g, "\\'") + '\')">' + q + '</button>'; }).join('')
+    + '</div>'
+    + '<div class="hrow"><input id="hp-in" placeholder="Ask the Concierge…" onkeydown="if(event.key===\'Enter\')hpSend()"><button onclick="hpSend()">Send</button></div>'
+    + '<div class="foot">Automated assistant · HPSocial</div></div>';
+  setTimeout(function(){ var el = document.getElementById('hp-msgs'); if (el) window.scrollTo(0, document.body.scrollHeight); }, 30);
+  return h;
+}
+function hpAsk(q){
+  hpLoad();
+  hpChat.push({ w: 'me', t: q }); hpTyping = true; hpSave(); render();
+  setTimeout(function(){ hpTyping = false; hpChat.push({ w: 'bot', t: hpAnswer(q) }); hpSave(); render(); }, 600);
+}
+function hpSend(){ var i = document.getElementById('hp-in'); if (!i) return; var t = i.value.trim(); if (!t) return; hpAsk(t); }
+function hpChip(q){ hpAsk(q); }
+
+function renderGate(){
+  document.getElementById('whoami').innerHTML = '';
+  var h = '<div class="gatefb"><img class="mark" src="bell-mark.png"><h1><b>HPS</b>ocial</h1>'
+    + '<div class="tag">Connect with hospitality people<br>at every property, everywhere.</div>'
+    + '<div class="fbcard">';
+  if (gateTab === 'login') {
+    h += '<input id="l-email" type="email" autocomplete="email" placeholder="Email">'
+      + '<input id="l-pw" type="password" autocomplete="current-password" placeholder="Password">'
+      + '<div id="gate-err"></div>'
+      + '<button class="fblogin" onclick="doLogin()">Log In</button>'
+      + '<a class="fblink" onclick="gateErr(\'Use the email and password you joined with. Password reset by email arrives with the full launch.\')">Forgot password?</a>'
+      + '<div class="fbdiv">or</div>'
+      + '<button class="fbcreate" id="btn-create" onclick="gateTab=\'join\';renderGate()">Create new account</button>'
+      + '<div class="hint">Hospitality only — you will pick your hotel so the community can verify you belong here.</div>'
+      + '<a class="fblink" style="margin-top:12px" onclick="gateHelp=true;render()">Questions? Ask the Concierge 🛎</a>';
+  } else {
+    h += '<h2>Create your account</h2><div class="fsub">For people working in hospitality.</div>'
+      + '<input id="j-name" autocomplete="name" placeholder="Full name">'
+      + '<input id="j-email" type="email" autocomplete="email" placeholder="Email">'
+      + '<input id="j-pw" type="password" autocomplete="new-password" placeholder="Create a password (12+ characters)">'
+      + '<select id="j-role">' + ROLES.map(function(r){ return '<option>' + esc(r) + '</option>'; }).join('') + '</select>'
+      + '<label class="f">Find your hotel — every hotel, worldwide</label><div id="hotelpick"></div><div id="selfiebox"></div>'
+      + '<div id="gate-err"></div>'
+      + '<button class="fbjoin" onclick="doJoin()">Join HPSocial</button>'
+      + '<div class="hint">If you leave hospitality, your profile pauses until you are back — your shout-outs and connections are kept safe.</div>'
+      + '<div class="fbdiv">or</div>'
+      + '<button class="fbcreate" id="btn-tologin" onclick="gateTab=\'login\';renderGate()" style="background:#e3eaf2;color:#29425e">I already have an account</button>';
+  }
+  h += '</div></div>';
+  document.getElementById('main').innerHTML = h;
+  if (gateTab === 'join') { renderHotelPick(); renderSelfieBox(); }
+}
+function renderHotelPick(){
+  var box = document.getElementById('hotelpick'); if (!box) return;
+  if (pickedHotel) {
+    var hh = hotelById(pickedHotel);
+    box.innerHTML = '<div class="hpicked"><button onclick="pickedHotel=null;renderHotelPick()">Change</button>' + esc(hh.name) + '<div class="hm">' + esc([hh.brand, hh.city, hh.country].filter(function(x){ return x; }).join(' · ')) + '</div></div>';
+    return;
+  }
+  box.innerHTML = '<input id="h-q" placeholder="Start typing your hotel, brand, or city…" oninput="hotelSearch(this.value)" autocomplete="off"><div class="hresults" id="h-res"></div>'
+    + '<div id="h-add"></div>';
+  var q = document.getElementById('h-q'); if (q) q.focus();
+}
+function hotelSearch(q){
+  var res = document.getElementById('h-res'), add = document.getElementById('h-add');
+  q = (q || '').trim().toLowerCase();
+  if (!q) { res.innerHTML = ''; add.innerHTML = ''; return; }
+  var hits = allHotels().filter(function(hh){ return (hh.name + ' ' + hh.brand + ' ' + hh.city + ' ' + hh.country).toLowerCase().indexOf(q) >= 0; }).slice(0, 14);
+  res.innerHTML = hits.map(function(hh){ return '<div onclick="pickHotel(\'' + hh.id + '\')">' + hotelLine(hh) + '</div>'; }).join('');
+  add.innerHTML = '<button class="ghostbtn" onclick="showAddHotel()">Can\u2019t find yours? Add your hotel</button>';
+}
+function pickHotel(id){ pickedHotel = id; renderHotelPick(); }
+function showAddHotel(){
+  document.getElementById('h-add').innerHTML = '<label class="f">Hotel name</label><input id="a-name" placeholder="Hotel name">'
+    + '<label class="f">Brand (or Independent)</label><input id="a-brand" placeholder="Brand">'
+    + '<label class="f">City</label><input id="a-city" placeholder="City">'
+    + '<label class="f">Country</label><input id="a-country" placeholder="Country">'
+    + '<button class="bigbtn" onclick="doAddHotel()">Add and select this hotel</button>';
+}
+async function doAddHotel(){
+  var n = document.getElementById('a-name').value.trim(), b = document.getElementById('a-brand').value.trim() || 'Independent',
+      c = document.getElementById('a-city').value.trim(), co = document.getElementById('a-country').value.trim();
+  if (!n || !c || !co) { document.getElementById('gate-err').innerHTML = '<div class="err">Hotel name, city, and country are needed.</div>'; return; }
+  var hh = { id: uid('h'), name: n, brand: b, city: c, country: co, verified: false };
+  S.hotels.push(hh); pickedHotel = hh.id; await push(); renderHotelPick();
+}
+function gateErr(msg){ document.getElementById('gate-err').innerHTML = '<div class="err">' + esc(msg) + '</div>'; }
+async function doJoin(){
+  var n = document.getElementById('j-name').value.trim(), em = document.getElementById('j-email').value.trim().toLowerCase(), pw = document.getElementById('j-pw').value, role = document.getElementById('j-role').value;
+  if (n.length < 2) return gateErr('Please enter your name.');
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return gateErr('Please enter a valid email — that is your login.');
+  if (!pw || pw.length < 12) return gateErr('Password must be at least 12 characters.');
+  if (!pickedHotel) return gateErr('Pick your hotel — that is what verifies you work in hospitality.');
+  if (S.members.some(function(m){ return (m.email || '').toLowerCase() === em; })) return gateErr('That email already has an account — use Log In.');
+  var m = { id: uid('m'), name: n, email: em, pw: pw, role: role, hotelId: pickedHotel, status: 'active', connections: [], created: Date.now(), u: Date.now(), pic: joinPic, selfie: !!joinPic, selfieAt: Date.now() };
+  S.members.push(m); me = m; joinPic = null; await push(); saveCache(); render();
+}
+async function doLogin(){
+  var em = document.getElementById('l-email').value.trim().toLowerCase(), pw = document.getElementById('l-pw').value;
+  var m = S.members.filter(function(x){ return (x.email || '').toLowerCase() === em; })[0];
+  if (!m || m.pw !== pw) return gateErr('That email and password do not match — try again.');
+  me = m; saveCache(); render();
+}
+function doLogout(){ me = null; view = 'feed'; profileOf = null; gateTab = 'login'; saveCache(); render(); }
+</script>
+<script>
+/* ============ app views ============ */
+function whoami(){
+  var el = document.getElementById('whoami');
+  if (!me) { el.innerHTML = ''; return; }
+  var hh = myHotel();
+  el.innerHTML = '<b>' + esc(me.name) + '</b><br>' + (hh ? esc(hh.name) : '') + ' · <a href="#" style="color:#f3d27a" onclick="doLogout();return false;">Log out</a>';
+}
+function tabbar(){
+  var tabs = [['feed', '🏠', 'Feed'], ['people', '👥', 'People'], ['msgs', '💬', 'Chats'], ['jobs', '💼', 'Jobs'], ['help', '🛎', 'Help'], ['profile', '👤', 'Profile']];
+  var un = me ? unreadCount() : 0;
+  return '<div class="tabbar">' + tabs.map(function(t){ return '<button class="' + (view === t[0] || (t[0] === 'msgs' && view === 'thread') ? 'on' : '') + '" onclick="go(\'' + t[0] + '\')"><span class="ic">' + t[1] + '</span>' + t[2] + (t[0] === 'msgs' && un ? '<span class="nbadge">' + un + '</span>' : '') + '</button>'; }).join('') + '</div>';
+}
+function go(v){ view = v; profileOf = null; render(); window.scrollTo(0, 0); }
+function shoutCountFor(id){ return S.posts.filter(function(p){ return p.type === 'shout' && p.toUid === id && !(p.reports && p.reports.length >= 2); }).length; }
+function postVisible(p){ return !(p.reports && p.reports.length >= 2) || (me && p.uid === me.id); }
+
+function postCard(p){
+  var a = memberById(p.uid); if (!a) return '';
+  var hh = hotelById(a.hotelId);
+  var liked = me && p.likes && p.likes.indexOf(me.id) >= 0;
+  var likers = (p.likes || []).map(function(id){ var m = memberById(id); return m ? firstName(m.name) : ''; }).filter(Boolean);
+  var h = '<div class="post2' + (p.type === 'shout' ? ' shout' : '') + (p.type === 'job' ? ' jobp' : '') + '" id="post-' + p.id + '">';
+  h += '<div class="pwho">' + ava(a) + '<div><div class="pnm">' + esc(a.name) + ' ' + (a.id === (me && me.id) ? '<span style="color:#8496ab;font-size:12px">(you)</span>' : '') + '</div>'
+    + '<div class="pmeta">' + esc(a.role) + ' · ' + (hh ? esc(hh.name) + (hh.city ? ', ' + esc(hh.city) : '') : '') + ' · ' + ago(p.ts) + '</div></div>'
+    + (a.pausedNote ? '' : '')
+    + (me && p.uid === me.id ? '<button class="pdel" title="Delete post" onclick="delPost(\'' + p.id + '\')">✕</button>' : '') + '</div>';
+  if (p.type === 'shout') {
+    var to = p.toUid ? memberById(p.toUid) : null;
+    h += '<div class="shoutto">🏆 Shout-out' + (to ? ' to <a href="#" style="color:#7a5b12" onclick="openProfile(\'' + to.id + '\');return false;">' + esc(to.name) + '</a>' : ' to the crew') + '</div>';
+  }
+  if (p.type === 'job') {
+    h += '<span class="jobtag">💼 Hiring</span><div class="jobrole">' + esc(p.jobRole || 'Team member') + ' — ' + (hh ? esc(hh.name) : '') + '</div>';
+  }
+  h += '<div class="ptxt">' + esc(p.text) + '</div>';
+  if (likers.length) h += '<div class="likenames">👍 ' + esc(likers.slice(0, 6).join(', ')) + (likers.length > 6 ? ' +' + (likers.length - 6) : '') + '</div>';
+  h += '<div class="pbar"><button class="' + (liked ? 'liked' : '') + '" onclick="toggleLike(\'' + p.id + '\')">👍 ' + (p.likes ? p.likes.length : 0) + (liked ? ' · Liked' : ' · Like') + '</button>'
+    + '<button onclick="focusComment(\'' + p.id + '\')">💬 ' + (p.comments ? p.comments.length : 0) + ' comments</button>';
+  if (p.type === 'job') {
+    var on = me && (p.interested || []).indexOf(me.id) >= 0;
+    h += (me && p.uid === me.id) ? '<span style="margin-left:auto">' + (p.interested || []).length + ' interested</span>' : '<button class="intbtn' + (on ? ' on' : '') + '" onclick="toggleInterest(\'' + p.id + '\')">' + (on ? '✓ Interested' : 'I\u2019m interested') + '</button>';
+  } else if (me && p.uid !== me.id) {
+    h += '<button class="rep" onclick="reportPost(\'' + p.id + '\')">🚩 Report</button>';
+  }
+  h += '</div>';
+  if (p.reports && p.reports.length >= 2) h += '<div style="color:#b3261e;font-size:12.5px;font-weight:700;margin-top:7px">This post is under review after reports.</div>';
+  /* comments */
+  h += '<div class="cmts">';
+  (p.comments || []).forEach(function(c, ci){
+    var cm = memberById(c.uid);
+    h += '<div class="cmt">' + (cm ? ava(cm, true) : '<div class="ava sm" style="background:#8496ab">?</div>') + '<div class="cb"><b>' + esc(c.n) + '</b> <span class="cw">' + ago(c.t) + '</span><br>' + esc(c.text) + '</div>'
+      + (me && c.uid === me.id ? '<button class="cdel" title="Delete comment" onclick="delComment(\'' + p.id + '\',' + ci + ')">✕</button>' : '') + '</div>';
+  });
+  var d = drafts['c-' + p.id] || '';
+  h += '<div class="cbox"><input id="cin-' + p.id + '" placeholder="Write a comment…" value="' + esc(d) + '" oninput="drafts[\'c-' + p.id + '\']=this.value" onkeydown="if(event.key===\'Enter\')addComment(\'' + p.id + '\')"><button onclick="addComment(\'' + p.id + '\')">Post</button></div>';
+  h += '</div></div>';
+  return h;
+}
+function feedPosts(){
+  var list = S.posts.filter(postVisible);
+  if (feedFilter === 'mine' && me) list = list.filter(function(p){ var a = memberById(p.uid); return a && a.hotelId === me.hotelId; });
+  if (feedFilter === 'shouts') list = list.filter(function(p){ return p.type === 'shout'; });
+  if (feedFilter === 'jobs') list = list.filter(function(p){ return p.type === 'job'; });
+  if (feedFilter === 'near' && me) { var mh = myHotel(); if (mh) list = list.filter(function(p){ var a = memberById(p.uid); var hh = a ? hotelById(a.hotelId) : null; return hh && hh.country === mh.country; }); }
+  return list.sort(function(a, b){ return b.ts - a.ts; });
+}
+function renderFeed(){
+  var h = '<div class="view">';
+  if (me.status === 'between') h += '<div class="post2" style="border:1.5px solid #c9a227;background:#fdf6e0"><b>Between properties?</b> Your profile shows it honestly — and the Jobs board below is fully open to you. When you land, pick your new hotel on your profile and you are verified again.</div>';
+  h += '<div class="composer"><div class="chips">'
+    + '<button class="' + (cmpType === 'post' ? 'on' : '') + '" onclick="cmpType=\'post\';render()">✏️ Post</button>'
+    + '<button class="' + (cmpType === 'shout' ? 'on gold' : '') + '" onclick="cmpType=\'shout\';render()">🏆 Shout-out</button>'
+    + '<button class="' + (cmpType === 'job' ? 'on' : '') + '" onclick="cmpType=\'job\';render()">💼 Job</button></div>'
+    + '<textarea id="cmp-text" oninput="drafts.cmp=this.value" placeholder="' + (cmpType === 'shout' ? 'Who went above and beyond?' : cmpType === 'job' ? 'Describe the opening…' : 'Share with the floor…') + '">' + esc(drafts.cmp || '') + '</textarea>';
+  if (cmpType === 'shout') {
+    h += '<div class="crow"><select id="cmp-to"><option value="">To: my whole crew</option>' + S.members.filter(function(m){ return me && m.id !== me.id && m.status !== 'paused'; }).map(function(m){ return '<option value="' + m.id + '">To: ' + esc(m.name) + '</option>'; }).join('') + '</select></div>';
+  }
+  if (cmpType === 'job') {
+    h += '<div class="crow"><select id="cmp-role">' + ROLES.map(function(r){ return '<option>' + esc(r) + '</option>'; }).join('') + '</select></div>';
+  }
+  h += '<div class="crow"><button class="post" style="flex:1;padding:12px" onclick="doPost()">Share</button></div></div>';
+  h += '<div class="filters">'
+    + [['all', '🌍 Everyone'], ['mine', '🏨 My property'], ['near', '📍 My country'], ['shouts', '🏆 Shout-outs'], ['jobs', '💼 Jobs']].map(function(f){ return '<button class="' + (feedFilter === f[0] ? 'on' : '') + '" onclick="feedFilter=\'' + f[0] + '\';render()">' + f[1] + '</button>'; }).join('') + '</div>';
+  var list = feedPosts();
+  h += list.length ? list.map(postCard).join('') : '<div class="empty">Nothing here yet — be the first to post.</div>';
+  h += '<div class="foot">HPSocial · Hospitality only, worldwide</div></div>';
+  return h;
+}
+function renderPeople(){
+  var h = '<div class="view"><div class="secttl" style="margin-top:2px">👥 Hospitality people</div>';
+  var ms = S.members.slice().sort(function(a, b){ return (a.status === 'paused') - (b.status === 'paused') || a.name.localeCompare(b.name); });
+  h += ms.map(function(m){
+    var hh = hotelById(m.hotelId);
+    var conn = me && me.connections.indexOf(m.id) >= 0;
+    return '<div class="member' + (m.status === 'paused' ? ' paused' : '') + '" onclick="openProfile(\'' + m.id + '\')">' + ava(m)
+      + '<div><div class="pnm" style="font-size:15.5px">' + esc(m.name) + (me && m.id === me.id ? ' <span style="color:#8496ab;font-size:12px">(you)</span>' : '') + '</div>'
+      + '<div class="pmeta">' + esc(m.role) + ' · ' + (hh ? esc(hh.name) + (hh.city ? ', ' + esc(hh.city) : '') : '') + '</div>' + statusBadge(m) + (m.selfie ? '' : ' <span style="color:#b45309;font-weight:800;font-size:12px">Not confirmed</span>') + '</div>'
+      + (me && m.id !== me.id ? '<button class="connbtn' + (conn ? ' on' : '') + '" onclick="event.stopPropagation();toggleConnect(\'' + m.id + '\')">' + (conn ? '✓ Connected' : 'Connect') + '</button>' : '') + '</div>';
+  }).join('');
+  h += '<div class="foot">Tap a person to see their profile and shout-outs.</div></div>';
+  return h;
+}
+function renderJobs(){
+  var jobs = S.posts.filter(function(p){ return p.type === 'job' && postVisible(p); }).sort(function(a, b){ return b.ts - a.ts; });
+  return '<div class="view"><div class="secttl" style="margin-top:2px">💼 Openings across hospitality</div>'
+    + (jobs.length ? jobs.map(postCard).join('') : '<div class="empty">No openings posted yet. Know one? Post it from the Feed with the 💼 Job button.</div>')
+    + '<div class="foot">Posted by hospitality people, for hospitality people.</div></div>';
+}
+function openProfile(id){ profileOf = id; render(); window.scrollTo(0, 0); }
+function renderProfile(){
+  var m = profileOf ? memberById(profileOf) : me;
+  if (!m) return '<div class="view"><div class="empty">Profile not found.</div></div>';
+  var hh = hotelById(m.hotelId);
+  var mine = me && m.id === me.id;
+  var conn = me && !mine && me.connections.indexOf(m.id) >= 0;
+  var h = '<div class="view"><div class="cover"></div><div class="profcard">' + '<span class="avaw"><div class="bigava" style="background:' + avColor(m.id) + '">' + (m.pic ? '<img src="' + m.pic + '" alt="">' : esc(initials(m.name))) + '</div>' + (m.selfie ? '<span class="vchk big">\u2713</span>' : '') + '</span>'
+    + '<div class="profname">' + esc(m.name) + '</div>'
+    + '<div class="pmeta" style="font-size:13.5px">' + esc(m.role) + ' · ' + (hh ? esc(hh.name) + (hh.city ? ' · ' + esc(hh.city) : '') + (hh.country ? ', ' + esc(hh.country) : '') : '') + '</div>'
+    + '<div style="margin-top:7px">' + statusBadge(m) + (m.selfie ? ' <span style="color:#2e9e4f;font-weight:800;font-size:12.5px">\u2713 Confirmed — real person</span>' : ' <span style="color:#b45309;font-weight:800;font-size:12.5px">Not confirmed</span>') + '</div>'
+    + '<div class="stats"><div><b>' + m.connections.length + '</b><span>Connections</span></div><div><b>' + shoutCountFor(m.id) + '</b><span>Shout-outs</span></div><div><b>' + Math.max(0, Math.round((Date.now() - (m.created || Date.now())) / 86400000 / 30)) + '</b><span>Months in</span></div></div>'
+    + (!mine && me ? '<div style="display:flex;gap:8px;margin:13px 0 2px"><button class="bigbtn" style="flex:1;margin:0" onclick="openThread(\'' + m.id + '\')">💬 Message</button><button class="connbtn' + (conn ? ' on' : '') + '" style="flex:1;margin:0" onclick="toggleConnect(\'' + m.id + '\')">' + (conn ? '✓ Connected' : 'Connect') + '</button></div>' : '')
+    + '</div>';
+  var shouts = S.posts.filter(function(p){ return p.type === 'shout' && p.toUid === m.id && postVisible(p); }).sort(function(a, b){ return b.ts - a.ts; });
+  h += '<div class="secttl">🏆 Shout-outs received</div>';
+  h += shouts.length ? shouts.map(postCard).join('') : '<div class="empty" style="padding:18px">No shout-outs yet.</div>';
+  var theirs = S.posts.filter(function(p){ return p.uid === m.id && p.type !== 'shout' && postVisible(p); }).sort(function(a, b){ return b.ts - a.ts; });
+  h += '<div class="secttl">✏️ Posts</div>';
+  h += theirs.length ? theirs.map(postCard).join('') : '<div class="empty" style="padding:18px">Nothing posted yet.</div>';
+  if (mine) {
+    if (!m.selfie) {
+      h += '<div class="card" style="margin-top:12px"><div class="secttl" style="margin-top:0">📷 Confirm you\'re a real person</div>'
+        + '<div style="color:#b45309;font-weight:800;font-size:13.5px">Not confirmed</div>'
+        + '<div style="font-size:14px;color:#54687e;line-height:1.5;margin-top:4px">Take a selfie and the green \u2713 appears next to your profile picture — members know you\'re real.</div>'
+        + '<input type="file" id="picfile" accept="image/*" capture="user" style="display:none" onchange="selfieConfirmChosen(this)">'
+        + '<button class="bigbtn" onclick="document.getElementById(\'picfile\').click()">📸 Take a selfie to confirm</button></div>';
+    } else {
+      h += '<div class="card" style="margin-top:12px"><div class="secttl" style="margin-top:0">📷 Profile photo</div>'
+        + '<div style="color:#2e9e4f;font-weight:800;font-size:13px">\u2713 Confirmed — real person</div>'
+        + '<div style="font-size:14px;color:#54687e;line-height:1.5;margin-top:4px">' + (m.pic ? 'Your photo shows on your posts, comments, and profile.' : 'Add a photo so people recognize you — it shows on your posts, comments, and profile.') + '</div>'
+        + '<input type="file" id="picfile" accept="image/*" style="display:none" onchange="picChosen(this)">'
+        + '<button class="bigbtn" onclick="document.getElementById(\'picfile\').click()">' + (m.pic ? 'Change photo' : 'Add a profile photo') + '</button>'
+        + (m.pic ? '<button class="ghostbtn" onclick="clearPic()">Remove photo</button>' : '') + '</div>';
+    }
+    h += '<div class="secttl">⚙️ My membership</div><div class="card" style="margin-top:6px">'
+      + '<div style="font-size:14.5px;line-height:1.55;color:#29425e">HPSocial is for people <b>currently working in hospitality</b>. If your situation changes, set it here — your profile and shout-outs are kept safe while you are away.</div>';
+    if (m.status === 'active') h += '<button class="ghostbtn" onclick="setStatus(\'between\')">I\u2019m between properties right now</button><button class="ghostbtn" onclick="setStatus(\'paused\')">I left hospitality</button>';
+    if (m.status === 'between') h += '<button class="bigbtn" onclick="backToWork()">I\u2019m back — pick my new hotel</button>';
+    h += '<button class="ghostbtn" onclick="doLogout()">Log out</button></div>';
+  }
+  h += '<div class="foot">Your reputation travels with you.</div></div>';
+  return h;
+}
+function renderPaused(){
+  return '<div class="view"><div class="pausedbox"><div style="font-size:44px">🔔</div><h2>Your profile is paused</h2>'
+    + '<p>You told HPSocial you left hospitality, so your account is resting — exactly how membership works here. Your connections, shout-outs, and history are all kept, untouched. The moment you are back in hospitality, pick your hotel and everything wakes up.</p>'
+    + '<button class="bigbtn" onclick="backToWork()">I\u2019m back in hospitality</button>'
+    + '<button class="ghostbtn" style="background:transparent;color:#aebfd2;border-color:#3d5a78" onclick="doLogout()">Log out</button></div></div>';
+}
+function backToWork(){
+  /* return to the gate's hotel picker as a re-verification step */
+  view = 'return'; render();
+}
+function renderReturn(){
+  var h = '<div class="view"><div class="card" style="margin-top:4px"><div class="secttl" style="margin-top:0">Welcome back 🎉</div>'
+    + '<div style="font-size:15px;line-height:1.55;color:#29425e">Pick the hotel where you work now, and your profile reactivates — connections, shout-outs, and all.</div>'
+    + '<label class="f">Find your hotel</label><div id="hotelpick"></div>'
+    + '<button class="bigbtn" onclick="doReturn()">Reactivate my profile</button></div></div>';
+  setTimeout(function(){ pickedHotel = pickedHotel || me.hotelId; renderHotelPick(); }, 0);
+  return h;
+}
+async function doReturn(){
+  if (!pickedHotel) { alert('Pick your hotel first.'); return; }
+  me.hotelId = pickedHotel; me.status = 'active'; me.u = Date.now(); await push(); view = 'feed'; render();
+}
+async function setStatus(st){
+  var msg = st === 'paused' ? 'Pause your profile? You will not be able to use HPSocial until you are back in hospitality.' : 'Show \u201cBetween properties\u201d on your profile? You keep full access, including Jobs.';
+  if (!confirm(msg)) return;
+  me.status = st; me.u = Date.now(); await push(); render();
+}
+
+function snapFile(inp, cb){
+  var f = inp.files && inp.files[0]; if (!f) return;
+  var rd = new FileReader();
+  rd.onload = function(){
+    var raw = rd.result;
+    try {
+      var img = new Image();
+      img.onload = function(){
+        try {
+          var max = 320, w = img.width, h = img.height, k = Math.min(1, max / Math.max(w, h));
+          var cv = document.createElement('canvas'); cv.width = Math.round(w * k); cv.height = Math.round(h * k);
+          cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+          cb(cv.toDataURL('image/jpeg', 0.85));
+        } catch (e) { cb(raw); }
+      };
+      img.onerror = function(){ cb(raw); };
+      img.src = raw;
+    } catch (e) { cb(raw); }
+  };
+  rd.readAsDataURL(f);
+}
+function picChosen(inp){ snapFile(inp, function(url){ savePic(url); }); }
+function renderSelfieBox(){
+  var box = document.getElementById('selfiebox'); if (!box) return;
+  if (joinPic) {
+    box.innerHTML = '<div class="selfiebox"><img src="' + joinPic + '"><div class="sb-t">✓ That\'s you — real and verified</div><div class="sb-s">This photo becomes your profile picture.</div><input type="file" id="j-selfie-file" accept="image/*" capture="user" style="display:none" onchange="selfieChosen(this)"><button onclick="document.getElementById(\'j-selfie-file\').click()">Retake photo</button></div>';
+  } else {
+    box.innerHTML = '<div class="selfiebox"><div style="font-size:34px">📸</div><div class="sb-t">Prove you\'re a real person</div><div class="sb-s">Take a selfie and your profile gets the green \u2713 — confirmed real, and the photo becomes your profile picture. Skip it and your profile shows \'Not confirmed\' until you do.</div><input type="file" id="j-selfie-file" accept="image/*" capture="user" style="display:none" onchange="selfieChosen(this)"><button onclick="document.getElementById(\'j-selfie-file\').click()">📸 Take your photo</button></div>';
+  }
+}
+function selfieChosen(inp){ snapFile(inp, function(url){ setJoinPic(url); }); }
+function setJoinPic(url){ joinPic = url; renderSelfieBox(); }
+function selfieConfirmChosen(inp){ snapFile(inp, function(url){ confirmSelfie(url); }); }
+async function confirmSelfie(url){
+  me.pic = url; me.selfie = true; me.selfieAt = Date.now();
+  me.u = Date.now(); await push(); saveCache(); render();
+}
+async function savePic(url){ me.pic = url; me.u = Date.now(); await push(); render(); }
+async function clearPic(){ if (!confirm('Remove your profile photo?')) return; delete me.pic; me.u = Date.now(); await push(); render(); }
+
+/* ============ actions ============ */
+function saveDrafts(){ var t = document.getElementById('cmp-text'); if (t) drafts.cmp = t.value; }
+async function doPost(){
+  var t = document.getElementById('cmp-text'); var text = t ? t.value.trim() : '';
+  if (!text) { alert('Write something first.'); return; }
+  var p = { id: uid('p'), uid: me.id, type: cmpType, text: text, likes: [], likesTs: 0, comments: [], commentsTs: 0, interested: [], reports: [], ts: Date.now() };
+  if (cmpType === 'shout') { var s = document.getElementById('cmp-to'); p.toUid = s && s.value ? s.value : null; }
+  if (cmpType === 'job') { var r = document.getElementById('cmp-role'); p.jobRole = r ? r.value : 'Team member'; view = 'feed'; feedFilter = 'jobs'; }
+  S.posts.unshift(p); drafts.cmp = ''; await push(); render();
+}
+async function toggleLike(id){
+  var p = S.posts.filter(function(x){ return x.id === id; })[0]; if (!p) return;
+  p.likes = p.likes || [];
+  var i = p.likes.indexOf(me.id);
+  if (i >= 0) p.likes.splice(i, 1); else p.likes.push(me.id);
+  p.likesTs = Date.now(); saveCache();
+  var card = document.getElementById('post-' + id);
+  if (card) { var a = memberById(p.uid); }
+  await push(); render();
+}
+async function toggleInterest(id){
+  var p = S.posts.filter(function(x){ return x.id === id; })[0]; if (!p) return;
+  p.interested = p.interested || [];
+  var i = p.interested.indexOf(me.id);
+  if (i >= 0) p.interested.splice(i, 1); else p.interested.push(me.id);
+  await push(); render();
+}
+function focusComment(id){ var i = document.getElementById('cin-' + id); if (i) { i.focus(); i.scrollIntoView({ block: 'center', behavior: 'smooth' }); } }
+async function addComment(id){
+  var inp = document.getElementById('cin-' + id); var text = inp ? inp.value.trim() : '';
+  if (!text) return;
+  var p = S.posts.filter(function(x){ return x.id === id; })[0]; if (!p) return;
+  p.comments = p.comments || [];
+  p.comments.push({ uid: me.id, n: me.name, t: Date.now(), text: text }); p.commentsTs = Date.now();
+  drafts['c-' + id] = ''; await push(); render();
+  var c = document.getElementById('post-' + id); if (c) c.scrollIntoView({ block: 'center' });
+}
+async function delComment(pid, ci){
+  var p = S.posts.filter(function(x){ return x.id === pid; })[0]; if (!p || !confirm('Delete this comment?')) return;
+  p.comments.splice(ci, 1); p.commentsTs = Date.now(); await push(); render();
+}
+async function delPost(id){
+  if (!confirm('Delete this post?')) return;
+  S.posts = S.posts.filter(function(x){ return x.id !== id; }); await push(); render();
+}
+async function reportPost(id){
+  var p = S.posts.filter(function(x){ return x.id === id; })[0]; if (!p) return;
+  if (!confirm('Report this post to the HPSocial moderators?')) return;
+  p.reports = p.reports || []; if (p.reports.indexOf(me.id) < 0) p.reports.push(me.id);
+  await push(); render(); alert('Reported — thank you. Our moderators will take a look.');
+}
+async function toggleConnect(id){
+  var other = memberById(id); if (!other) return;
+  var i = me.connections.indexOf(id);
+  if (i >= 0) { me.connections.splice(i, 1); var j = other.connections.indexOf(me.id); if (j >= 0) other.connections.splice(j, 1); }
+  else { me.connections.push(id); if (other.connections.indexOf(me.id) < 0) other.connections.push(me.id); }
+  me.u = Date.now(); other.u = Date.now(); await push(); render();
+}
+
+
+/* ============ Messenger ============ */
+var msgWith = null, msgDraft = '';
+function unreadCount(){ return (S.msgs || []).filter(function(g){ return g.to === me.id && !g.read; }).length; }
+function unreadFrom(id){ return (S.msgs || []).filter(function(g){ return g.to === me.id && g.from === id && !g.read; }).length; }
+function lastMsgWith(id){
+  var list = (S.msgs || []).filter(function(g){ return (g.from === me.id && g.to === id) || (g.from === id && g.to === me.id); });
+  return list.length ? list[list.length - 1] : null;
+}
+async function openThread(id){
+  msgWith = id; msgDraft = '';
+  var changed = false;
+  (S.msgs || []).forEach(function(g){ if (g.from === id && g.to === me.id && !g.read) { g.read = true; changed = true; } });
+  view = 'thread'; profileOf = null; render(); window.scrollTo(0, 0);
+  if (changed) { await push(); saveCache(); }
+}
+function renderMsgs(){
+  var partners = {};
+  (S.msgs || []).forEach(function(g){ if (g.from === me.id) partners[g.to] = 1; if (g.to === me.id) partners[g.from] = 1; });
+  var ids = Object.keys(partners).filter(function(id){ return memberById(id); });
+  ids.sort(function(x, y){ var lx = lastMsgWith(x), ly = lastMsgWith(y); return ((ly && ly.ts) || 0) - ((lx && lx.ts) || 0); });
+  var h = '<div class="view"><div class="secttl" style="margin-top:2px">💬 Messages</div>';
+  if (ids.length) {
+    h += ids.map(function(id){
+      var m = memberById(id), last = lastMsgWith(id), un = unreadFrom(id);
+      return '<div class="member" onclick="openThread(\'' + id + '\')">' + ava(m)
+        + '<div style="flex:1;min-width:0"><div class="pnm" style="font-size:15.5px">' + esc(m.name) + '</div>'
+        + '<div class="pmeta" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (last ? (last.from === me.id ? 'You: ' : '') + esc(last.text) : '') + '</div></div>'
+        + '<div style="text-align:right;flex:none">' + (last ? '<div style="color:#8496ab;font-size:11.5px">' + ago(last.ts) + '</div>' : '') + (un ? '<div class="nbadge" style="position:static;margin-top:4px">' + un + '</div>' : '') + '</div></div>';
+    }).join('');
+  } else {
+    h += '<div class="empty">No conversations yet. Message someone below, or tap 💬 Message on any profile.</div>';
+  }
+  var others = S.members.filter(function(m){ return m.id !== me.id && m.status !== 'paused' && !partners[m.id]; });
+  if (others.length) {
+    h += '<div class="secttl">Start a chat</div>' + others.map(function(m){
+      var hh = hotelById(m.hotelId);
+      return '<div class="member" onclick="openThread(\'' + m.id + '\')">' + ava(m)
+        + '<div><div class="pnm" style="font-size:15.5px">' + esc(m.name) + '</div><div class="pmeta">' + esc(m.role) + ' · ' + (hh ? esc(hh.name) : '') + '</div></div></div>';
+    }).join('');
+  }
+  h += '<div class="foot">Private chats between HPSocial members.</div></div>';
+  return h;
+}
+function renderThread(){
+  var m = memberById(msgWith);
+  if (!m) return '<div class="view"><div class="empty">Conversation not found.</div></div>';
+  var list = (S.msgs || []).filter(function(g){ return (g.from === me.id && g.to === m.id) || (g.from === m.id && g.to === me.id); });
+  var h = '<div class="view"><a class="hback" onclick="go(\'msgs\')">← All chats</a>'
+    + '<div class="hhead" style="cursor:pointer" onclick="openProfile(\'' + m.id + '\')">' + ava(m) + '<div><div class="ht">' + esc(m.name) + '</div><div class="hs">' + esc(m.role) + ' · ' + esc((hotelById(m.hotelId) || {}).name || '') + '</div></div></div>'
+    + '<div class="hmsgs">'
+    + (list.length ? list.map(function(g){ return '<div class="hbub ' + (g.from === me.id ? 'me' : 'bot') + '">' + esc(g.text) + '<div style="font-size:10.5px;opacity:.65;margin-top:3px">' + ago(g.ts) + (g.from === me.id && g.read ? ' · Seen' : '') + '</div></div>'; }).join('') : '<div class="empty">Say hello to ' + esc(firstName(m.name)) + ' 👋</div>')
+    + '</div>'
+    + '<div class="hrow"><input id="msg-in" placeholder="Message ' + esc(firstName(m.name)) + '…" value="' + esc(msgDraft) + '" oninput="msgDraft=this.value" onkeydown="if(event.key===\'Enter\')sendMsg()"><button onclick="sendMsg()">Send</button></div>'
+    + '</div>';
+  setTimeout(function(){ window.scrollTo(0, document.body.scrollHeight); var i = document.getElementById('msg-in'); if (i && msgDraft) i.focus(); }, 30);
+  return h;
+}
+async function sendMsg(){
+  var i = document.getElementById('msg-in'); if (!i) return;
+  var t = i.value.trim(); if (!t || !msgWith) return;
+  if (!S.msgs) S.msgs = [];
+  S.msgs.push({ id: uid('g'), from: me.id, to: msgWith, text: t, ts: Date.now(), read: false });
+  msgDraft = ''; await push(); saveCache(); render();
+}
+
+/* ============ render & boot ============ */
+function render(){
+  whoami();
+  if (!S) { document.getElementById('main').innerHTML = '<div class="empty">Loading HPSocial…</div>'; return; }
+  if (!me) { if (gateHelp) { document.getElementById('main').innerHTML = renderHelp(); return; } renderGate(); return; }
+  if (view === 'return') { document.getElementById('main').innerHTML = renderReturn() + tabbar(); return; }
+  if (me.status === 'paused') { document.getElementById('main').innerHTML = renderPaused() + tabbar(); return; }
+  var h = '';
+  if (profileOf || view === 'profile') h = renderProfile();
+  else if (view === 'people') h = renderPeople();
+  else if (view === 'jobs') h = renderJobs();
+  else if (view === 'help') h = renderHelp();
+  else if (view === 'msgs') h = renderMsgs();
+  else if (view === 'thread') h = renderThread();
+  else h = renderFeed();
+  document.getElementById('main').innerHTML = h + tabbar();
+}
+window.hpsRender = render;
+setInterval(function(){ if (me && document.visibilityState === 'visible') pull(); }, 30000);
+document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible' && me) pull(); });
+(async function boot(){
+  try { if (localStorage.getItem('hps-v') !== '3') { localStorage.removeItem('hps-cache'); localStorage.removeItem('hps-me'); localStorage.setItem('hps-v', '3'); } } catch (e) {}
+  loadCache(); if (S && !S.msgs) S.msgs = [];
+  var savedMe = null;
+  try { savedMe = localStorage.getItem('hps-me'); } catch (e) {}
+  if (S && savedMe) me = memberById(savedMe);
+  render();
+  try {
+    var c = await sbGet();
+    if (c) S = unionState(S, c);
+    else { if (!S) S = seedState(); await sbSet(S); }
+    if (savedMe) me = memberById(savedMe) || me;
+    saveCache(); setBadge(); render();
+  } catch (e) {
+    if (!S) S = seedState();
+    if (savedMe) me = memberById(savedMe) || me;
+    saveCache();
+    var b = document.getElementById('syncbadge'); b.textContent = '● Offline — showing saved copy'; b.className = 'sync off';
+    render();
+  }
+})();
+
+/* ---- opening splash: swinging bell + ring ---- */
+var splashDone = false;
+function ringBell(){
+  try {
+    var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return false;
+    var ctx = ringBell.ctx || (ringBell.ctx = new AC());
+    if (ctx.state === 'suspended') { ctx.resume(); if (ctx.state === 'suspended') return false; }
+    function ding(t0){
+      var partials = [[2093, .50], [2637, .30], [3520, .16], [5233, .07]];
+      partials.forEach(function(p){
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = p[0];
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.linearRampToValueAtTime(p[1] * .45, t0 + .004);
+        g.gain.exponentialRampToValueAtTime(.0001, t0 + .9);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(t0); o.stop(t0 + 1);
+      });
+    }
+    var t = ctx.currentTime + .05;
+    ding(t); ding(t + .38);
+    return true;
+  } catch (e) { return false; }
+}
+function hideSplash(){
+  if (splashDone) return; splashDone = true;
+  var s = document.getElementById('splash'); if (!s) return;
+  s.classList.add('gone');
+  setTimeout(function(){ if (s.parentNode) s.parentNode.removeChild(s); }, 500);
+}
+(function splash(){
+  var s = document.getElementById('splash'); if (!s) return;
+  s.addEventListener('click', hideSplash);
+  if (!ringBell()) {
+    var once = function(){ ringBell(); document.removeEventListener('pointerdown', once); };
+    document.addEventListener('pointerdown', once);
+    setTimeout(function(){ document.removeEventListener('pointerdown', once); }, 8000);
+  }
+  setTimeout(hideSplash, 2000);
+})();
+</script>
+<script>
+if('serviceWorker' in navigator){ window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+</script>
+</body>
+</html>
