@@ -63,7 +63,7 @@
   .post2.shout { border:1.5px solid #c9a227; background:linear-gradient(180deg,#fffdf4,#fff); }
   .post2.jobp { border:1.5px solid #c9a227; background:linear-gradient(120deg,#fdf6e0,#fffaf0); }
   .pwho { display:flex; gap:10px; align-items:center; }
-  .ava { width:44px; height:44px; border-radius:50%; flex:0 0 auto; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:16px; color:#fff; }
+  .ava { overflow:hidden; width:44px; height:44px; border-radius:50%; flex:0 0 auto; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:16px; color:#fff; }
   .ava.sm { width:34px; height:34px; font-size:12.5px; }
   .pnm { font-weight:900; font-size:16px; }
   .pmeta { color:#8496ab; font-size:12.5px; font-weight:600; line-height:1.35; }
@@ -99,7 +99,7 @@
   .connbtn.on { background:#e3eaf2; color:#54687e; }
   .cover { height:118px; border-radius:18px 18px 0 0; background:linear-gradient(120deg,#0d2138,#1d4066 60%,#c9a227 160%); margin:-12px -12px 0; }
   .profcard { background:#fff; border-radius:0 0 18px 18px; padding:0 16px 16px; box-shadow:0 2px 8px rgba(13,33,56,.08); }
-  .bigava { width:82px; height:82px; border-radius:50%; border:4px solid #fff; margin-top:-41px; display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:900; color:#fff; position:relative; }
+  .bigava { overflow:hidden; width:82px; height:82px; border-radius:50%; border:4px solid #fff; margin-top:-41px; display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:900; color:#fff; position:relative; }
   .profname { font-family:Georgia,serif; font-size:25px; font-weight:700; margin-top:7px; }
   .stats { display:flex; margin-top:13px; border-top:1px solid #e6ecf3; padding-top:11px; }
   .stats div { flex:1; text-align:center; }
@@ -131,6 +131,7 @@
   .fbdiv:before, .fbdiv:after { content:''; flex:1; border-top:1px solid #dbe5ef; }
   .fbjoin { width:100%; border:0; border-radius:9px; padding:13px; font-size:16.5px; font-weight:900; background:#c9a227; color:#12263f; cursor:pointer; margin-top:16px; }
   .empty { text-align:center; color:#8496ab; padding:34px 20px; font-size:15px; line-height:1.6; }
+  .ava img, .bigava img { width:100%; height:100%; object-fit:cover; display:block; }
   .foot { text-align:center; color:#8496ab; font-size:12px; padding:6px 0 16px; font-weight:700; }
 </style>
 </head>
@@ -244,7 +245,7 @@ function memberById(id){ return S ? S.members.filter(function(m){ return m.id ==
 function hotelById(id){ return S ? S.hotels.filter(function(h){ return h.id === id; })[0] : null; }
 function myHotel(){ return me ? hotelById(me.hotelId) : null; }
 function statusBadge(m){ if (m.status === 'paused') return '<span class="badge pau">Left hospitality</span>'; if (m.status === 'between') return '<span class="badge bet">Between properties</span>'; return '<span class="badge act">In hospitality</span>'; }
-function ava(m, sm){ return '<div class="ava' + (sm ? ' sm' : '') + '" style="background:' + avColor(m.id) + '">' + esc(initials(m.name)) + '</div>'; }
+function ava(m, sm){ if (m.pic) return '<div class="ava' + (sm ? ' sm' : '') + '"><img src="' + m.pic + '" alt=""></div>'; return '<div class="ava' + (sm ? ' sm' : '') + '" style="background:' + avColor(m.id) + '">' + esc(initials(m.name)) + '</div>'; }
 
 function seedState(){
   var hotels = SEED_HOTELS.map(function(h, i){ return { id: 'seed' + i, name: h[0], brand: h[1], city: h[2], country: h[3], verified: true }; });
@@ -522,7 +523,7 @@ function renderProfile(){
   var hh = hotelById(m.hotelId);
   var mine = me && m.id === me.id;
   var conn = me && !mine && me.connections.indexOf(m.id) >= 0;
-  var h = '<div class="view"><div class="cover"></div><div class="profcard">' + '<div class="bigava" style="background:' + avColor(m.id) + '">' + esc(initials(m.name)) + '</div>'
+  var h = '<div class="view"><div class="cover"></div><div class="profcard">' + '<div class="bigava" style="background:' + avColor(m.id) + '">' + (m.pic ? '<img src="' + m.pic + '" alt="">' : esc(initials(m.name))) + '</div>'
     + '<div class="profname">' + esc(m.name) + '</div>'
     + '<div class="pmeta" style="font-size:13.5px">' + esc(m.role) + ' · ' + (hh ? esc(hh.name) + (hh.city ? ' · ' + esc(hh.city) : '') + (hh.country ? ', ' + esc(hh.country) : '') : '') + '</div>'
     + '<div style="margin-top:7px">' + statusBadge(m) + '</div>'
@@ -536,6 +537,11 @@ function renderProfile(){
   h += '<div class="secttl">✏️ Posts</div>';
   h += theirs.length ? theirs.map(postCard).join('') : '<div class="empty" style="padding:18px">Nothing posted yet.</div>';
   if (mine) {
+    h += '<div class="card" style="margin-top:12px"><div class="secttl" style="margin-top:0">📷 Profile photo</div>'
+      + '<div style="font-size:14px;color:#54687e;line-height:1.5">' + (m.pic ? 'Your photo shows on your posts, comments, and profile.' : 'Add a photo so people recognize you — it shows on your posts, comments, and profile.') + '</div>'
+      + '<input type="file" id="picfile" accept="image/*" style="display:none" onchange="picChosen(this)">'
+      + '<button class="bigbtn" onclick="document.getElementById(\'picfile\').click()">' + (m.pic ? 'Change photo' : 'Add a profile photo') + '</button>'
+      + (m.pic ? '<button class="ghostbtn" onclick="clearPic()">Remove photo</button>' : '') + '</div>';
     h += '<div class="secttl">⚙️ My membership</div><div class="card" style="margin-top:6px">'
       + '<div style="font-size:14.5px;line-height:1.55;color:#29425e">HPSocial is for people <b>currently working in hospitality</b>. If your situation changes, set it here — your profile and shout-outs are kept safe while you are away.</div>';
     if (m.status === 'active') h += '<button class="ghostbtn" onclick="setStatus(\'between\')">I\u2019m between properties right now</button><button class="ghostbtn" onclick="setStatus(\'paused\')">I left hospitality</button>';
@@ -572,6 +578,30 @@ async function setStatus(st){
   if (!confirm(msg)) return;
   me.status = st; me.u = Date.now(); await push(); render();
 }
+
+function picChosen(inp){
+  var f = inp.files && inp.files[0]; if (!f) return;
+  var rd = new FileReader();
+  rd.onload = function(){
+    var raw = rd.result;
+    try {
+      var img = new Image();
+      img.onload = function(){
+        try {
+          var max = 320, w = img.width, h = img.height, k = Math.min(1, max / Math.max(w, h));
+          var cv = document.createElement('canvas'); cv.width = Math.round(w * k); cv.height = Math.round(h * k);
+          cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+          savePic(cv.toDataURL('image/jpeg', 0.85));
+        } catch (e) { savePic(raw); }
+      };
+      img.onerror = function(){ savePic(raw); };
+      img.src = raw;
+    } catch (e) { savePic(raw); }
+  };
+  rd.readAsDataURL(f);
+}
+async function savePic(url){ me.pic = url; me.u = Date.now(); await push(); render(); }
+async function clearPic(){ if (!confirm('Remove your profile photo?')) return; delete me.pic; me.u = Date.now(); await push(); render(); }
 
 /* ============ actions ============ */
 function saveDrafts(){ var t = document.getElementById('cmp-text'); if (t) drafts.cmp = t.value; }
