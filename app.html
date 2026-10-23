@@ -65,6 +65,9 @@
   .pwho { display:flex; gap:10px; align-items:center; }
   .ava { overflow:hidden; width:44px; height:44px; border-radius:50%; flex:0 0 auto; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:16px; color:#fff; }
   .ava.sm { width:34px; height:34px; font-size:12.5px; }
+  .avaw { position:relative; display:inline-block; flex:0 0 auto; line-height:0; }
+  .vchk { position:absolute; right:-3px; bottom:-3px; width:16px; height:16px; border-radius:50%; background:#2e9e4f; color:#fff; font-size:10.5px; font-weight:900; display:flex; align-items:center; justify-content:center; border:2px solid #fff; line-height:1; z-index:2; }
+  .vchk.big { width:25px; height:25px; font-size:14px; right:1px; bottom:3px; }
   .pnm { font-weight:900; font-size:16px; }
   .pmeta { color:#8496ab; font-size:12.5px; font-weight:600; line-height:1.35; }
   .pdel { margin-left:auto; border:0; background:none; color:#b3261e; font-size:16px; cursor:pointer; padding:4px; }
@@ -251,7 +254,11 @@ function memberById(id){ return S ? S.members.filter(function(m){ return m.id ==
 function hotelById(id){ return S ? S.hotels.filter(function(h){ return h.id === id; })[0] : null; }
 function myHotel(){ return me ? hotelById(me.hotelId) : null; }
 function statusBadge(m){ if (m.status === 'paused') return '<span class="badge pau">Left hospitality</span>'; if (m.status === 'between') return '<span class="badge bet">Between properties</span>'; return '<span class="badge act">In hospitality</span>'; }
-function ava(m, sm){ if (m.pic) return '<div class="ava' + (sm ? ' sm' : '') + '"><img src="' + m.pic + '" alt=""></div>'; return '<div class="ava' + (sm ? ' sm' : '') + '" style="background:' + avColor(m.id) + '">' + esc(initials(m.name)) + '</div>'; }
+function ava(m, sm){
+  var inner = m.pic ? '<div class="ava' + (sm ? ' sm' : '') + '"><img src="' + m.pic + '" alt=""></div>' : '<div class="ava' + (sm ? ' sm' : '') + '" style="background:' + avColor(m.id) + '">' + esc(initials(m.name)) + '</div>';
+  if (!m.selfie) return inner;
+  return '<span class="avaw">' + inner + '<span class="vchk">\u2713</span></span>';
+}
 
 function seedState(){
   var hotels = SEED_HOTELS.map(function(h, i){ return { id: 'seed' + i, name: h[0], brand: h[1], city: h[2], country: h[3], verified: true }; });
@@ -403,9 +410,8 @@ async function doJoin(){
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return gateErr('Please enter a valid email — that is your login.');
   if (!pw || pw.length < 12) return gateErr('Password must be at least 12 characters.');
   if (!pickedHotel) return gateErr('Pick your hotel — that is what verifies you work in hospitality.');
-  if (!joinPic) return gateErr('Take your photo to prove you are a real person — it becomes your profile picture.');
   if (S.members.some(function(m){ return (m.email || '').toLowerCase() === em; })) return gateErr('That email already has an account — use Log In.');
-  var m = { id: uid('m'), name: n, email: em, pw: pw, role: role, hotelId: pickedHotel, status: 'active', connections: [], created: Date.now(), u: Date.now(), pic: joinPic, selfie: true, selfieAt: Date.now() };
+  var m = { id: uid('m'), name: n, email: em, pw: pw, role: role, hotelId: pickedHotel, status: 'active', connections: [], created: Date.now(), u: Date.now(), pic: joinPic, selfie: !!joinPic, selfieAt: Date.now() };
   S.members.push(m); me = m; joinPic = null; await push(); saveCache(); render();
 }
 async function doLogin(){
@@ -511,7 +517,7 @@ function renderPeople(){
     var conn = me && me.connections.indexOf(m.id) >= 0;
     return '<div class="member' + (m.status === 'paused' ? ' paused' : '') + '" onclick="openProfile(\'' + m.id + '\')">' + ava(m)
       + '<div><div class="pnm" style="font-size:15.5px">' + esc(m.name) + (me && m.id === me.id ? ' <span style="color:#8496ab;font-size:12px">(you)</span>' : '') + '</div>'
-      + '<div class="pmeta">' + esc(m.role) + ' · ' + (hh ? esc(hh.name) + (hh.city ? ', ' + esc(hh.city) : '') : '') + '</div>' + statusBadge(m) + '</div>'
+      + '<div class="pmeta">' + esc(m.role) + ' · ' + (hh ? esc(hh.name) + (hh.city ? ', ' + esc(hh.city) : '') : '') + '</div>' + statusBadge(m) + (m.selfie ? '' : ' <span style="color:#b45309;font-weight:800;font-size:12px">Not confirmed</span>') + '</div>'
       + (me && m.id !== me.id ? '<button class="connbtn' + (conn ? ' on' : '') + '" onclick="event.stopPropagation();toggleConnect(\'' + m.id + '\')">' + (conn ? '✓ Connected' : 'Connect') + '</button>' : '') + '</div>';
   }).join('');
   h += '<div class="foot">Tap a person to see their profile and shout-outs.</div></div>';
@@ -530,10 +536,10 @@ function renderProfile(){
   var hh = hotelById(m.hotelId);
   var mine = me && m.id === me.id;
   var conn = me && !mine && me.connections.indexOf(m.id) >= 0;
-  var h = '<div class="view"><div class="cover"></div><div class="profcard">' + '<div class="bigava" style="background:' + avColor(m.id) + '">' + (m.pic ? '<img src="' + m.pic + '" alt="">' : esc(initials(m.name))) + '</div>'
+  var h = '<div class="view"><div class="cover"></div><div class="profcard">' + '<span class="avaw"><div class="bigava" style="background:' + avColor(m.id) + '">' + (m.pic ? '<img src="' + m.pic + '" alt="">' : esc(initials(m.name))) + '</div>' + (m.selfie ? '<span class="vchk big">\u2713</span>' : '') + '</span>'
     + '<div class="profname">' + esc(m.name) + '</div>'
     + '<div class="pmeta" style="font-size:13.5px">' + esc(m.role) + ' · ' + (hh ? esc(hh.name) + (hh.city ? ' · ' + esc(hh.city) : '') + (hh.country ? ', ' + esc(hh.country) : '') : '') + '</div>'
-    + '<div style="margin-top:7px">' + statusBadge(m) + (m.selfie ? ' <span style="color:#2e7d32;font-weight:800;font-size:12.5px">✓ Photo-verified — real person</span>' : '') + '</div>'
+    + '<div style="margin-top:7px">' + statusBadge(m) + (m.selfie ? ' <span style="color:#2e9e4f;font-weight:800;font-size:12.5px">\u2713 Confirmed — real person</span>' : ' <span style="color:#b45309;font-weight:800;font-size:12.5px">Not confirmed</span>') + '</div>'
     + '<div class="stats"><div><b>' + m.connections.length + '</b><span>Connections</span></div><div><b>' + shoutCountFor(m.id) + '</b><span>Shout-outs</span></div><div><b>' + Math.max(0, Math.round((Date.now() - (m.created || Date.now())) / 86400000 / 30)) + '</b><span>Months in</span></div></div>'
     + (!mine && me ? '<button class="connbtn' + (conn ? ' on' : '') + '" style="width:100%;margin:13px 0 2px" onclick="toggleConnect(\'' + m.id + '\')">' + (conn ? '✓ Connected' : 'Connect') + '</button>' : '')
     + '</div>';
@@ -544,11 +550,20 @@ function renderProfile(){
   h += '<div class="secttl">✏️ Posts</div>';
   h += theirs.length ? theirs.map(postCard).join('') : '<div class="empty" style="padding:18px">Nothing posted yet.</div>';
   if (mine) {
-    h += '<div class="card" style="margin-top:12px"><div class="secttl" style="margin-top:0">📷 Profile photo</div>'
-      + '<div style="font-size:14px;color:#54687e;line-height:1.5">' + (m.pic ? 'Your photo shows on your posts, comments, and profile.' : 'Add a photo so people recognize you — it shows on your posts, comments, and profile.') + '</div>'
-      + '<input type="file" id="picfile" accept="image/*" style="display:none" onchange="picChosen(this)">'
-      + '<button class="bigbtn" onclick="document.getElementById(\'picfile\').click()">' + (m.pic ? 'Change photo' : 'Add a profile photo') + '</button>'
-      + (m.pic ? '<button class="ghostbtn" onclick="clearPic()">Remove photo</button>' : '') + '</div>';
+    if (!m.selfie) {
+      h += '<div class="card" style="margin-top:12px"><div class="secttl" style="margin-top:0">📷 Confirm you\'re a real person</div>'
+        + '<div style="color:#b45309;font-weight:800;font-size:13.5px">Not confirmed</div>'
+        + '<div style="font-size:14px;color:#54687e;line-height:1.5;margin-top:4px">Take a selfie and the green \u2713 appears next to your profile picture — members know you\'re real.</div>'
+        + '<input type="file" id="picfile" accept="image/*" capture="user" style="display:none" onchange="selfieConfirmChosen(this)">'
+        + '<button class="bigbtn" onclick="document.getElementById(\'picfile\').click()">📸 Take a selfie to confirm</button></div>';
+    } else {
+      h += '<div class="card" style="margin-top:12px"><div class="secttl" style="margin-top:0">📷 Profile photo</div>'
+        + '<div style="color:#2e9e4f;font-weight:800;font-size:13px">\u2713 Confirmed — real person</div>'
+        + '<div style="font-size:14px;color:#54687e;line-height:1.5;margin-top:4px">' + (m.pic ? 'Your photo shows on your posts, comments, and profile.' : 'Add a photo so people recognize you — it shows on your posts, comments, and profile.') + '</div>'
+        + '<input type="file" id="picfile" accept="image/*" style="display:none" onchange="picChosen(this)">'
+        + '<button class="bigbtn" onclick="document.getElementById(\'picfile\').click()">' + (m.pic ? 'Change photo' : 'Add a profile photo') + '</button>'
+        + (m.pic ? '<button class="ghostbtn" onclick="clearPic()">Remove photo</button>' : '') + '</div>';
+    }
     h += '<div class="secttl">⚙️ My membership</div><div class="card" style="margin-top:6px">'
       + '<div style="font-size:14.5px;line-height:1.55;color:#29425e">HPSocial is for people <b>currently working in hospitality</b>. If your situation changes, set it here — your profile and shout-outs are kept safe while you are away.</div>';
     if (m.status === 'active') h += '<button class="ghostbtn" onclick="setStatus(\'between\')">I\u2019m between properties right now</button><button class="ghostbtn" onclick="setStatus(\'paused\')">I left hospitality</button>';
@@ -613,11 +628,16 @@ function renderSelfieBox(){
   if (joinPic) {
     box.innerHTML = '<div class="selfiebox"><img src="' + joinPic + '"><div class="sb-t">✓ That\'s you — real and verified</div><div class="sb-s">This photo becomes your profile picture.</div><input type="file" id="j-selfie-file" accept="image/*" capture="user" style="display:none" onchange="selfieChosen(this)"><button onclick="document.getElementById(\'j-selfie-file\').click()">Retake photo</button></div>';
   } else {
-    box.innerHTML = '<div class="selfiebox"><div style="font-size:34px">📸</div><div class="sb-t">Prove you\'re a real person</div><div class="sb-s">Take a selfie to finish signing up. No fake profiles, no robots — your photo becomes your profile picture.</div><input type="file" id="j-selfie-file" accept="image/*" capture="user" style="display:none" onchange="selfieChosen(this)"><button onclick="document.getElementById(\'j-selfie-file\').click()">📸 Take your photo</button></div>';
+    box.innerHTML = '<div class="selfiebox"><div style="font-size:34px">📸</div><div class="sb-t">Prove you\'re a real person</div><div class="sb-s">Take a selfie and your profile gets the green \u2713 — confirmed real, and the photo becomes your profile picture. Skip it and your profile shows \'Not confirmed\' until you do.</div><input type="file" id="j-selfie-file" accept="image/*" capture="user" style="display:none" onchange="selfieChosen(this)"><button onclick="document.getElementById(\'j-selfie-file\').click()">📸 Take your photo</button></div>';
   }
 }
 function selfieChosen(inp){ snapFile(inp, function(url){ setJoinPic(url); }); }
 function setJoinPic(url){ joinPic = url; renderSelfieBox(); }
+function selfieConfirmChosen(inp){ snapFile(inp, function(url){ confirmSelfie(url); }); }
+async function confirmSelfie(url){
+  me.pic = url; me.selfie = true; me.selfieAt = Date.now();
+  me.u = Date.now(); await push(); saveCache(); render();
+}
 async function savePic(url){ me.pic = url; me.u = Date.now(); await push(); render(); }
 async function clearPic(){ if (!confirm('Remove your profile photo?')) return; delete me.pic; me.u = Date.now(); await push(); render(); }
 
