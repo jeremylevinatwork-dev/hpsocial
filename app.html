@@ -153,10 +153,10 @@ var SEED_HOTELS = [
  ['Loews Hotels & Co','Loews Hotels & Co','Orlando, FL','United States'],
  ['Hard Rock Hotel Orlando','Hard Rock','Orlando, FL','United States'],['Walt Disney World Swan','Westin','Orlando, FL','United States'],
  ['Fontainebleau Miami Beach','Independent','Miami Beach, FL','United States'],['The Setai Miami Beach','Independent','Miami Beach, FL','United States'],
- ['Bellagio Las Vegas','MGM','Las Vegas, NV','United States'],['Caesars Palace','Caesars','Las Vegas, NV','United States'],
+ ['Caesars Palace','Caesars','Las Vegas, NV','United States'],
  ['The Plaza New York','Fairmont','New York, NY','United States'],['The Ritz-Carlton New York','Ritz-Carlton','New York, NY','United States'],
  ['Waldorf Astoria Beverly Hills','Hilton','Beverly Hills, CA','United States'],['Fairmont San Francisco','Fairmont','San Francisco, CA','United States'],
- ['The Drake Chicago','Hilton','Chicago, IL','United States'],['Hilton Hawaiian Village','Hilton','Honolulu, HI','United States'],
+['Hilton Hawaiian Village','Hilton','Honolulu, HI','United States'],
  ['Grand Hyatt Nashville','Hyatt','Nashville, TN','United States'],['The Roosevelt New Orleans','Hilton','New Orleans, LA','United States'],
  ['The Savoy','Fairmont','London','United Kingdom'],['The Ritz London','Ritz-Carlton','London','United Kingdom'],
  ['Claridge\u2019s','Maybourne','London','United Kingdom'],['The Langham London','Langham','London','United Kingdom'],
@@ -173,7 +173,57 @@ var SEED_HOTELS = [
  ['Conrad Maldives Rangali Island','Hilton','Rangali Island','Maldives'],['The Ritz-Carlton Paris','Ritz-Carlton','Paris','France'],
  ['H\u00f4tel de Crillon','Rosewood','Paris','France'],['Fairmont Royal York','Fairmont','Toronto','Canada'],
  ['Park Hyatt Sydney','Hyatt','Sydney','Australia'],['The Peninsula Tokyo','Peninsula','Tokyo','Japan'],
- ['Four Seasons Resort Bali at Jimbaran Bay','Four Seasons','Bali','Indonesia'],['The Oberoi Mumbai','Oberoi','Mumbai','India']
+ ['Four Seasons Resort Bali at Jimbaran Bay','Four Seasons','Bali','Indonesia'],['The Oberoi Mumbai','Oberoi','Mumbai','India'],
+ ['Grand Hotel Golf Resort & Spa','','', 'United States'],
+ ['Hotel Captain Cook','','', 'United States'],
+ ['The Phoenician','','', 'United States'],
+ ['1905 Crescent Hotel & Spa','','', 'United States'],
+ ['The Beverly Hills Hotel','','', 'United States'],
+ ['The Broadmoor','','', 'United States'],
+ ['Mayflower Inn & Spa','','', 'United States'],
+ ['Hotel du Pont','','', 'United States'],
+ ['The Ritz-Carlton','','', 'United States'],
+ ['The Cloister at Sea Island','','', 'United States'],
+ ['Four Seasons Resort Hualālai','','', 'United States'],
+ ['The Coeur d\'Alene Resort','','', 'United States'],
+ ['The Drake Hotel','','', 'United States'],
+ ['West Baden Springs Hotel','','', 'United States'],
+ ['Hotel Pattee','','', 'United States'],
+ ['The Eldridge Hotel','','', 'United States'],
+ ['21c Museum Hotel','','', 'United States'],
+ ['Hotel Monteleone','','', 'United States'],
+ ['White Barn Inn','','', 'United States'],
+ ['Inn at Perry Cabin','','', 'United States'],
+ ['Mandarin Oriental','','', 'United States'],
+ ['Grand Hotel','','', 'United States'],
+ ['The Saint Paul Hotel','','', 'United States'],
+ ['Beau Rivage Resort & Casino','','', 'United States'],
+ ['The Raphael Hotel','','', 'United States'],
+ ['The Resort at Paws Up','','', 'United States'],
+ ['The Magnolia Hotel','','', 'United States'],
+ ['Bellagio Resort & Casino','','', 'United States'],
+ ['Omni Mount Washington Resort','','', 'United States'],
+ ['Borgata Hotel Casino & Spa','','', 'United States'],
+ ['Rosewood Inn of the Anasazi','','', 'United States'],
+ ['Lotte New York Palace','','', 'United States'],
+ ['The Omni Grove Park Inn','','', 'United States'],
+ ['Hotel Donaldson','','', 'United States'],
+ ['21c Museum Hotel','','', 'United States'],
+ ['The Skirvin Hilton','','', 'United States'],
+ ['The Nines','','', 'United States'],
+ ['The Hotel Hershey','','', 'United States'],
+ ['Ocean House','','', 'United States'],
+ ['Wentworth Mansion','','', 'United States'],
+ ['State Game Lodge','','', 'United States'],
+ ['The Peabody','','', 'United States'],
+ ['The Joule','','', 'United States'],
+ ['Amangiri','','', 'United States'],
+ ['The Woodstock Inn & Resort','','', 'United States'],
+ ['The Jefferson Hotel','','', 'United States'],
+ ['The Edgewater Hotel','','', 'United States'],
+ ['The Greenbrier','','', 'United States'],
+ ['The Pfister Hotel','','', 'United States'],
+ ['Amangani','','', 'United States']
 ];
 </script>
 <script>
@@ -201,12 +251,12 @@ function seedState(){
   function H(n){ return hotels.filter(function(h){ return h.name === n; })[0].id; }
   var t = Date.now();
   var members = [
-    { id: 'demo-ana', name: 'Ana Rivas', pin: '1111', role: 'Housekeeping', hotelId: H('Hilton Orlando'), status: 'active', connections: ['demo-mateo', 'demo-daniel'], created: t - 86400000 * 40, u: t },
-    { id: 'demo-mateo', name: 'Mateo Kovacs', pin: '1111', role: 'Lifeguard & Recreation', hotelId: H('Atlantis The Palm'), status: 'active', connections: ['demo-ana'], created: t - 86400000 * 31, u: t },
-    { id: 'demo-daniel', name: 'Daniel Chen', pin: '1111', role: 'Management', hotelId: H('Fontainebleau Miami Beach'), status: 'active', connections: ['demo-ana'], created: t - 86400000 * 55, u: t },
-    { id: 'demo-priya', name: 'Priya Shah', pin: '1111', role: 'Concierge', hotelId: H('The Savoy'), status: 'active', connections: [], created: t - 86400000 * 22, u: t },
-    { id: 'demo-liwei', name: 'Li Wei', pin: '1111', role: 'Culinary / Kitchen', hotelId: H('The Peninsula Shanghai'), status: 'active', connections: [], created: t - 86400000 * 18, u: t },
-    { id: 'demo-shanice', name: 'Shanice Williams', pin: '1111', role: 'Front Desk', hotelId: H('Sandals Montego Bay'), status: 'between', connections: [], created: t - 86400000 * 12, u: t }
+    { id: 'demo-ana', name: 'Ana Rivas', email: 'ana@hpsocial.app', pw: 'Welcome12345', role: 'Housekeeping', hotelId: H('Hilton Orlando'), status: 'active', connections: ['demo-mateo', 'demo-daniel'], created: t - 86400000 * 40, u: t },
+    { id: 'demo-mateo', name: 'Mateo Kovacs', email: 'mateo@hpsocial.app', pw: 'Welcome12345', role: 'Lifeguard & Recreation', hotelId: H('Atlantis The Palm'), status: 'active', connections: ['demo-ana'], created: t - 86400000 * 31, u: t },
+    { id: 'demo-daniel', name: 'Daniel Chen', email: 'daniel@hpsocial.app', pw: 'Welcome12345', role: 'Management', hotelId: H('Fontainebleau Miami Beach'), status: 'active', connections: ['demo-ana'], created: t - 86400000 * 55, u: t },
+    { id: 'demo-priya', name: 'Priya Shah', email: 'priya@hpsocial.app', pw: 'Welcome12345', role: 'Concierge', hotelId: H('The Savoy'), status: 'active', connections: [], created: t - 86400000 * 22, u: t },
+    { id: 'demo-liwei', name: 'Li Wei', email: 'liwei@hpsocial.app', pw: 'Welcome12345', role: 'Culinary / Kitchen', hotelId: H('The Peninsula Shanghai'), status: 'active', connections: [], created: t - 86400000 * 18, u: t },
+    { id: 'demo-shanice', name: 'Shanice Williams', email: 'shanice@hpsocial.app', pw: 'Welcome12345', role: 'Front Desk', hotelId: H('Sandals Montego Bay'), status: 'between', connections: [], created: t - 86400000 * 12, u: t }
   ];
   var posts = [
     { id: 'seed-p1', uid: 'demo-ana', type: 'shout', toUid: null, text: 'Shout-out to my whole PM crew — 214 rooms turned on a sold-out storm night. This team is unreal. 🏆', likes: ['demo-mateo', 'demo-daniel'], likesTs: t - 3600000 * 5, comments: [{ uid: 'demo-mateo', n: 'Mateo Kovacs', t: t - 3600000 * 4, text: 'Legends. All of you.' }], commentsTs: t - 3600000 * 4, interested: [], reports: [], ts: t - 3600000 * 6 },
@@ -273,25 +323,26 @@ async function push(){
 
 /* ============ gate ============ */
 function allHotels(){ return S.hotels.slice().sort(function(a, b){ return a.name.localeCompare(b.name); }); }
-function hotelLine(h){ return '<div class="hn">' + esc(h.name) + '</div><div class="hm">' + esc(h.brand) + ' · ' + esc(h.city) + ' · ' + esc(h.country) + (h.verified ? '' : ' · awaiting verification') + '</div>'; }
+function hotelLine(h){ var parts = [h.brand, h.city, h.country].filter(function(x){ return x; }); return '<div class="hn">' + esc(h.name) + '</div><div class="hm">' + esc(parts.join(' · ')) + (h.verified ? '' : ' · awaiting verification') + '</div>'; }
 function renderGate(){
   document.getElementById('whoami').innerHTML = '';
   var h = '<div class="gatefb"><img class="mark" src="bell-mark.png"><h1><b>HPS</b>ocial</h1>'
     + '<div class="tag">Connect with hospitality people<br>at every property, everywhere.</div>'
     + '<div class="fbcard">';
   if (gateTab === 'login') {
-    h += '<select id="l-name">' + S.members.slice().sort(function(a, b){ return a.name.localeCompare(b.name); }).map(function(m){ var hh = hotelById(m.hotelId); return '<option value="' + m.id + '">' + esc(m.name) + (hh ? ' — ' + esc(hh.name) : '') + '</option>'; }).join('') + '</select>'
-      + '<input id="l-pin" inputmode="numeric" type="password" maxlength="6" placeholder="PIN">'
+    h += '<input id="l-email" type="email" autocomplete="email" placeholder="Email">'
+      + '<input id="l-pw" type="password" autocomplete="current-password" placeholder="Password">'
       + '<div id="gate-err"></div>'
       + '<button class="fblogin" onclick="doLogin()">Log In</button>'
-      + '<a class="fblink" onclick="gateErr(\'While HPSocial is young, the starter profiles all use PIN 1111. Your own PIN is the one you chose when you joined.\')">Forgot your PIN?</a>'
+      + '<a class="fblink" onclick="gateErr(\'Use the email and password you joined with. Password reset by email arrives with the full launch.\')">Forgot password?</a>'
       + '<div class="fbdiv">or</div>'
       + '<button class="fbcreate" id="btn-create" onclick="gateTab=\'join\';renderGate()">Create new account</button>'
       + '<div class="hint">Hospitality only — you will pick your hotel so the community can verify you belong here.</div>';
   } else {
     h += '<h2>Create your account</h2><div class="fsub">For people working in hospitality.</div>'
       + '<input id="j-name" autocomplete="name" placeholder="Full name">'
-      + '<input id="j-pin" inputmode="numeric" type="password" maxlength="6" placeholder="Choose a PIN (4–6 numbers)">'
+      + '<input id="j-email" type="email" autocomplete="email" placeholder="Email">'
+      + '<input id="j-pw" type="password" autocomplete="new-password" placeholder="Create a password (12+ characters)">'
       + '<select id="j-role">' + ROLES.map(function(r){ return '<option>' + esc(r) + '</option>'; }).join('') + '</select>'
       + '<label class="f">Find your hotel — every hotel, worldwide</label><div id="hotelpick"></div>'
       + '<div id="gate-err"></div>'
@@ -308,7 +359,7 @@ function renderHotelPick(){
   var box = document.getElementById('hotelpick'); if (!box) return;
   if (pickedHotel) {
     var hh = hotelById(pickedHotel);
-    box.innerHTML = '<div class="hpicked"><button onclick="pickedHotel=null;renderHotelPick()">Change</button>' + esc(hh.name) + '<div class="hm">' + esc(hh.brand) + ' · ' + esc(hh.city) + ' · ' + esc(hh.country) + '</div></div>';
+    box.innerHTML = '<div class="hpicked"><button onclick="pickedHotel=null;renderHotelPick()">Change</button>' + esc(hh.name) + '<div class="hm">' + esc([hh.brand, hh.city, hh.country].filter(function(x){ return x; }).join(' · ')) + '</div></div>';
     return;
   }
   box.innerHTML = '<input id="h-q" placeholder="Start typing your hotel, brand, or city…" oninput="hotelSearch(this.value)" autocomplete="off"><div class="hresults" id="h-res"></div>'
@@ -340,21 +391,22 @@ async function doAddHotel(){
 }
 function gateErr(msg){ document.getElementById('gate-err').innerHTML = '<div class="err">' + esc(msg) + '</div>'; }
 async function doJoin(){
-  var n = document.getElementById('j-name').value.trim(), pin = document.getElementById('j-pin').value.trim(), role = document.getElementById('j-role').value;
+  var n = document.getElementById('j-name').value.trim(), em = document.getElementById('j-email').value.trim().toLowerCase(), pw = document.getElementById('j-pw').value, role = document.getElementById('j-role').value;
   if (n.length < 2) return gateErr('Please enter your name.');
-  if (!/^\d{4,6}$/.test(pin)) return gateErr('PIN must be 4 to 6 numbers.');
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return gateErr('Please enter a valid email — that is your login.');
+  if (!pw || pw.length < 12) return gateErr('Password must be at least 12 characters.');
   if (!pickedHotel) return gateErr('Pick your hotel — that is what verifies you work in hospitality.');
-  if (S.members.some(function(m){ return m.name.toLowerCase() === n.toLowerCase(); })) return gateErr('That name is already a member — use Log in.');
-  var m = { id: uid('m'), name: n, pin: pin, role: role, hotelId: pickedHotel, status: 'active', connections: [], created: Date.now(), u: Date.now() };
+  if (S.members.some(function(m){ return (m.email || '').toLowerCase() === em; })) return gateErr('That email already has an account — use Log In.');
+  var m = { id: uid('m'), name: n, email: em, pw: pw, role: role, hotelId: pickedHotel, status: 'active', connections: [], created: Date.now(), u: Date.now() };
   S.members.push(m); me = m; await push(); saveCache(); render();
 }
 async function doLogin(){
-  var id = document.getElementById('l-name').value, pin = document.getElementById('l-pin').value.trim();
-  var m = memberById(id);
-  if (!m || m.pin !== pin) return gateErr('That PIN does not match — try again.');
+  var em = document.getElementById('l-email').value.trim().toLowerCase(), pw = document.getElementById('l-pw').value;
+  var m = S.members.filter(function(x){ return (x.email || '').toLowerCase() === em; })[0];
+  if (!m || m.pw !== pw) return gateErr('That email and password do not match — try again.');
   me = m; saveCache(); render();
 }
-function doLogout(){ me = null; view = 'feed'; profileOf = null; saveCache(); render(); }
+function doLogout(){ me = null; view = 'feed'; profileOf = null; gateTab = 'login'; saveCache(); render(); }
 </script>
 <script>
 /* ============ app views ============ */
@@ -379,7 +431,7 @@ function postCard(p){
   var likers = (p.likes || []).map(function(id){ var m = memberById(id); return m ? firstName(m.name) : ''; }).filter(Boolean);
   var h = '<div class="post2' + (p.type === 'shout' ? ' shout' : '') + (p.type === 'job' ? ' jobp' : '') + '" id="post-' + p.id + '">';
   h += '<div class="pwho">' + ava(a) + '<div><div class="pnm">' + esc(a.name) + ' ' + (a.id === (me && me.id) ? '<span style="color:#8496ab;font-size:12px">(you)</span>' : '') + '</div>'
-    + '<div class="pmeta">' + esc(a.role) + ' · ' + (hh ? esc(hh.name) + ', ' + esc(hh.city) : '') + ' · ' + ago(p.ts) + '</div></div>'
+    + '<div class="pmeta">' + esc(a.role) + ' · ' + (hh ? esc(hh.name) + (hh.city ? ', ' + esc(hh.city) : '') : '') + ' · ' + ago(p.ts) + '</div></div>'
     + (a.pausedNote ? '' : '')
     + (me && p.uid === me.id ? '<button class="pdel" title="Delete post" onclick="delPost(\'' + p.id + '\')">✕</button>' : '') + '</div>';
   if (p.type === 'shout') {
@@ -451,7 +503,7 @@ function renderPeople(){
     var conn = me && me.connections.indexOf(m.id) >= 0;
     return '<div class="member' + (m.status === 'paused' ? ' paused' : '') + '" onclick="openProfile(\'' + m.id + '\')">' + ava(m)
       + '<div><div class="pnm" style="font-size:15.5px">' + esc(m.name) + (me && m.id === me.id ? ' <span style="color:#8496ab;font-size:12px">(you)</span>' : '') + '</div>'
-      + '<div class="pmeta">' + esc(m.role) + ' · ' + (hh ? esc(hh.name) + ', ' + esc(hh.city) : '') + '</div>' + statusBadge(m) + '</div>'
+      + '<div class="pmeta">' + esc(m.role) + ' · ' + (hh ? esc(hh.name) + (hh.city ? ', ' + esc(hh.city) : '') : '') + '</div>' + statusBadge(m) + '</div>'
       + (me && m.id !== me.id ? '<button class="connbtn' + (conn ? ' on' : '') + '" onclick="event.stopPropagation();toggleConnect(\'' + m.id + '\')">' + (conn ? '✓ Connected' : 'Connect') + '</button>' : '') + '</div>';
   }).join('');
   h += '<div class="foot">Tap a person to see their profile and shout-outs.</div></div>';
@@ -472,7 +524,7 @@ function renderProfile(){
   var conn = me && !mine && me.connections.indexOf(m.id) >= 0;
   var h = '<div class="view"><div class="cover"></div><div class="profcard">' + '<div class="bigava" style="background:' + avColor(m.id) + '">' + esc(initials(m.name)) + '</div>'
     + '<div class="profname">' + esc(m.name) + '</div>'
-    + '<div class="pmeta" style="font-size:13.5px">' + esc(m.role) + ' · ' + (hh ? esc(hh.name) + ' · ' + esc(hh.city) + ', ' + esc(hh.country) : '') + '</div>'
+    + '<div class="pmeta" style="font-size:13.5px">' + esc(m.role) + ' · ' + (hh ? esc(hh.name) + (hh.city ? ' · ' + esc(hh.city) : '') + (hh.country ? ', ' + esc(hh.country) : '') : '') + '</div>'
     + '<div style="margin-top:7px">' + statusBadge(m) + '</div>'
     + '<div class="stats"><div><b>' + m.connections.length + '</b><span>Connections</span></div><div><b>' + shoutCountFor(m.id) + '</b><span>Shout-outs</span></div><div><b>' + Math.max(0, Math.round((Date.now() - (m.created || Date.now())) / 86400000 / 30)) + '</b><span>Months in</span></div></div>'
     + (!mine && me ? '<button class="connbtn' + (conn ? ' on' : '') + '" style="width:100%;margin:13px 0 2px" onclick="toggleConnect(\'' + m.id + '\')">' + (conn ? '✓ Connected' : 'Connect') + '</button>' : '')
@@ -598,6 +650,7 @@ window.hpsRender = render;
 setInterval(function(){ if (me && document.visibilityState === 'visible') pull(); }, 30000);
 document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible' && me) pull(); });
 (async function boot(){
+  try { if (localStorage.getItem('hps-v') !== '2') { localStorage.removeItem('hps-cache'); localStorage.removeItem('hps-me'); localStorage.setItem('hps-v', '2'); } } catch (e) {}
   loadCache();
   var savedMe = null;
   try { savedMe = localStorage.getItem('hps-me'); } catch (e) {}
