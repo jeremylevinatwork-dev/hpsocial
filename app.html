@@ -137,6 +137,20 @@
   .selfiebox .sb-t { font-weight:900; font-size:15px; }
   .selfiebox .sb-s { color:#54687e; font-size:13px; margin-top:3px; line-height:1.45; }
   .selfiebox button { border:0; border-radius:10px; padding:11px 20px; font-weight:900; font-size:14.5px; background:#0d2138; color:#fff; cursor:pointer; margin-top:9px; }
+  .hhead { display:flex; gap:12px; align-items:center; background:#0d2138; color:#fff; border-radius:16px; padding:14px 16px; }
+  .hhead .hbell { width:46px; height:46px; border-radius:50%; background:#c9a227; display:flex; align-items:center; justify-content:center; font-size:23px; flex:none; }
+  .hhead .ht { font-weight:900; font-size:17px; }
+  .hhead .hs { color:#b8c7d9; font-size:12.5px; margin-top:1px; }
+  .hmsgs { display:flex; flex-direction:column; gap:9px; margin:14px 0; }
+  .hbub { max-width:86%; padding:11px 13px; border-radius:15px; font-size:14.5px; line-height:1.5; white-space:pre-wrap; word-break:break-word; }
+  .hbub.bot { background:#fff; border:1px solid #dfe6ee; border-left:4px solid #c9a227; align-self:flex-start; border-bottom-left-radius:5px; }
+  .hbub.me { background:#0d2138; color:#fff; align-self:flex-end; border-bottom-right-radius:5px; }
+  .hchips { display:flex; flex-wrap:wrap; gap:7px; margin:4px 0 10px; }
+  .hchips button { border:1.5px solid #c9a227; background:#fffdf4; color:#7a5b12; border-radius:999px; padding:8px 12px; font-weight:800; font-size:13px; cursor:pointer; }
+  .hrow { display:flex; gap:8px; }
+  .hrow input { flex:1; border:1.5px solid #d9dee5; border-radius:12px; padding:12px; font-size:15px; min-width:0; }
+  .hrow button { border:0; border-radius:12px; padding:12px 18px; font-weight:900; background:#c9a227; color:#231a00; cursor:pointer; }
+  .hback { display:inline-block; margin-bottom:10px; color:#29425e; font-weight:800; font-size:14px; cursor:pointer; }
   .fbjoin { width:100%; border:0; border-radius:9px; padding:13px; font-size:16.5px; font-weight:900; background:#c9a227; color:#12263f; cursor:pointer; margin-top:16px; }
   .empty { text-align:center; color:#8496ab; padding:34px 20px; font-size:15px; line-height:1.6; }
   .ava img, .bigava img { width:100%; height:100%; object-fit:cover; display:block; }
@@ -338,6 +352,69 @@ async function push(){
 /* ============ gate ============ */
 function allHotels(){ return S.hotels.slice().sort(function(a, b){ return a.name.localeCompare(b.name); }); }
 function hotelLine(h){ var parts = [h.brand, h.city, h.country].filter(function(x){ return x; }); return '<div class="hn">' + esc(h.name) + '</div><div class="hm">' + esc(parts.join(' · ')) + (h.verified ? '' : ' · awaiting verification') + '</div>'; }
+
+/* ============ Concierge — HPSocial's own AI customer service ============ */
+var gateHelp = false, hpChat = null, hpTyping = false;
+function hpLoad(){
+  if (hpChat) return;
+  try { hpChat = JSON.parse(localStorage.getItem('hps-chat') || 'null'); } catch (e) {}
+  if (!hpChat || !hpChat.length) hpChat = [{ w: 'bot', t: 'Welcome to HPSocial 🛎 I\'m the Concierge — HPSocial\'s own assistant, here around the clock. Ask me anything about using HPSocial, or tap a topic below.' }];
+}
+function hpSave(){ try { localStorage.setItem('hps-chat', JSON.stringify(hpChat.slice(-40))); } catch (e) {} }
+var HP_TOPICS = [
+  { k: ['green', 'check', 'confirm', 'selfie', 'verified', 'verify', 'real person', 'not confirmed', 'badge'], a: 'The green ✓ means a member is confirmed real. Take a selfie when you join — or any time after: Profile → “Take a selfie to confirm”. The photo becomes your profile picture and the ✓ rides next to it everywhere — feed, comments, People. No selfie yet? Your profile shows “Not confirmed” until you take one.' },
+  { k: ['join', 'sign up', 'signup', 'create account', 'new account', 'register'], a: 'Tap “Create new account” on the sign-in screen: your name, email, a password of 12+ characters, your role, and your hotel. The hotel search covers properties worldwide — and if yours is missing, you can add it right there.' },
+  { k: ['forgot', 'password', 'reset', 'locked out', 'log in', 'login', 'sign in'], a: 'Use the email and password you joined with. Password reset by email arrives with the full launch — until then, keep your password somewhere safe.' },
+  { k: ['shout', 'recognition', 'thank', 'praise', 'award'], a: 'Shout-outs are how reputations grow here 🏆 In the composer, tap Shout-out, write it, and choose the crew or one specific member. It lands on their profile under “Shout-outs received” — and it travels with them from property to property.' },
+  { k: ['job', 'hiring', 'opening', 'work', 'career', 'interested', 'apply'], a: 'Tap 💼 Jobs to see openings posted by members across hospitality. To post one: in the composer tap Job, name the role and write the details. See one you like? Tap “I\'m interested” and the poster sees your name.' },
+  { k: ['post', 'feed', 'share', 'write'], a: 'From the Feed, write in the box at the top and tap Post. Filters at the top narrow the feed: Everyone, My property, My country, Shout-outs, or Jobs. Tap 👍 to like and 💬 to comment.' },
+  { k: ['connect', 'people', 'friend', 'network', 'meet'], a: 'People shows hospitality folks across properties and countries. Tap Connect on anyone — you\'re connected both ways. Tap any person to see their profile, hotel, and the shout-outs they\'ve earned.' },
+  { k: ['photo', 'picture', 'avatar', 'image'], a: 'Your profile photo shows on your posts, comments, and in People. Change it any time: Profile → Profile photo. Tip: the selfie you confirm with becomes your photo automatically.' },
+  { k: ['left', 'leave', 'quit', 'between', 'pause', 'paused', 'fired', 'laid off', 'no longer'], a: 'HPSocial travels with you. Profile → “I\'m between properties” keeps full access while you look for your next role. “I left hospitality” pauses your account — locked and hidden, but your connections, shout-outs, and history stay preserved. Back in the industry? Pick your new hotel and everything wakes up.' },
+  { k: ['report', 'fake', 'abuse', 'spam', 'block', 'safety', 'inappropriate'], a: 'Real people only — that\'s the rule here. Tap Report on any post: two reports send it for review and hide it meanwhile. Fake or abusive accounts get removed.' },
+  { k: ['hotel', 'property', 'find my', 'add my', 'missing', 'listed'], a: 'The directory holds hotels worldwide and grows by members. At join, search your hotel by name; if it isn\'t there, tap “Add my hotel” — member-added hotels are flagged until verified.' },
+  { k: ['privacy', 'who sees', 'data', 'sell', 'private'], a: 'Only HPSocial members see the network — your posts, profile, hotel, and shout-outs live inside the community. Your email is never shown on your profile.' },
+  { k: ['cost', 'free', 'price', 'pay', 'subscription'], a: 'HPSocial is free for members. Joining takes a minute and there are no member fees.' },
+  { k: ['delete', 'remove account', 'close account'], a: 'Full account deletion arrives with the app launch. Today, Profile → “I left hospitality” pauses and hides your account while keeping your history safe — and you can return any time.' },
+  { k: ['app', 'download', 'install', 'phone', 'iphone', 'android', 'home screen'], a: 'No download needed — HPSocial runs right in your browser. Tip: use “Add to Home Screen” in your browser menu and it behaves like an app. A native app is on the roadmap.' },
+  { k: ['human', 'person', 'agent', 'contact', 'support', 'email', 'help me'], a: 'I\'m the Concierge, HPSocial\'s automated assistant — fastest for anything about using the app, day or night. Member support by email arrives with the full launch.' },
+  { k: ['what is', 'about', 'hpsocial', 'who made', 'whats this'], a: 'HPSocial — Hospitality Professionals Social — is the social network strictly for hospitality: Facebook-style community plus LinkedIn-style jobs and reputation, only for hotel people, worldwide. Your shout-outs and connections travel with you from property to property.' }
+];
+function hpAnswer(q){
+  var s = ' ' + String(q).toLowerCase() + ' ', best = null, bestScore = 0;
+  HP_TOPICS.forEach(function(t){
+    var score = 0;
+    t.k.forEach(function(k){ if (s.indexOf(k) >= 0) score += k.length; });
+    if (score > bestScore) { bestScore = score; best = t; }
+  });
+  if (best) return best.a;
+  return 'I don\'t have that one yet — I\'m sharpest on HPSocial itself. Ask me about the green check, shout-outs, jobs, connections, profile photos, or what happens if you change properties.';
+}
+function renderHelp(){
+  hpLoad();
+  var h = '<div class="view">'
+    + (gateHelp && !me ? '<a class="hback" onclick="gateHelp=false;render()">← Back to sign in</a>' : '')
+    + '<div class="hhead"><div class="hbell">🛎</div><div><div class="ht">Concierge</div><div class="hs">HPSocial\'s own assistant · answers instantly, day or night</div></div></div>'
+    + '<div class="hmsgs" id="hp-msgs">'
+    + hpChat.map(function(m){ return '<div class="hbub ' + m.w + '">' + esc(m.t) + '</div>'; }).join('')
+    + (hpTyping ? '<div class="hbub bot">···</div>' : '')
+    + '</div>'
+    + '<div class="hchips">'
+    + ['How do I get the green ✓?', 'How do shout-outs work?', 'How do I post a job?', 'I left my job — what happens?', 'Report a problem', 'Forgot my password'].map(function(q){ return '<button onclick="hpChip(\'' + q.replace(/'/g, "\\'") + '\')">' + q + '</button>'; }).join('')
+    + '</div>'
+    + '<div class="hrow"><input id="hp-in" placeholder="Ask the Concierge…" onkeydown="if(event.key===\'Enter\')hpSend()"><button onclick="hpSend()">Send</button></div>'
+    + '<div class="foot">Automated assistant · HPSocial</div></div>';
+  setTimeout(function(){ var el = document.getElementById('hp-msgs'); if (el) window.scrollTo(0, document.body.scrollHeight); }, 30);
+  return h;
+}
+function hpAsk(q){
+  hpLoad();
+  hpChat.push({ w: 'me', t: q }); hpTyping = true; hpSave(); render();
+  setTimeout(function(){ hpTyping = false; hpChat.push({ w: 'bot', t: hpAnswer(q) }); hpSave(); render(); }, 600);
+}
+function hpSend(){ var i = document.getElementById('hp-in'); if (!i) return; var t = i.value.trim(); if (!t) return; hpAsk(t); }
+function hpChip(q){ hpAsk(q); }
+
 function renderGate(){
   document.getElementById('whoami').innerHTML = '';
   var h = '<div class="gatefb"><img class="mark" src="bell-mark.png"><h1><b>HPS</b>ocial</h1>'
@@ -351,7 +428,8 @@ function renderGate(){
       + '<a class="fblink" onclick="gateErr(\'Use the email and password you joined with. Password reset by email arrives with the full launch.\')">Forgot password?</a>'
       + '<div class="fbdiv">or</div>'
       + '<button class="fbcreate" id="btn-create" onclick="gateTab=\'join\';renderGate()">Create new account</button>'
-      + '<div class="hint">Hospitality only — you will pick your hotel so the community can verify you belong here.</div>';
+      + '<div class="hint">Hospitality only — you will pick your hotel so the community can verify you belong here.</div>'
+      + '<a class="fblink" style="margin-top:12px" onclick="gateHelp=true;render()">Questions? Ask the Concierge 🛎</a>';
   } else {
     h += '<h2>Create your account</h2><div class="fsub">For people working in hospitality.</div>'
       + '<input id="j-name" autocomplete="name" placeholder="Full name">'
@@ -431,7 +509,7 @@ function whoami(){
   el.innerHTML = '<b>' + esc(me.name) + '</b><br>' + (hh ? esc(hh.name) : '') + ' · <a href="#" style="color:#f3d27a" onclick="doLogout();return false;">Log out</a>';
 }
 function tabbar(){
-  var tabs = [['feed', '🏠', 'Feed'], ['people', '👥', 'People'], ['jobs', '💼', 'Jobs'], ['profile', '👤', 'Profile']];
+  var tabs = [['feed', '🏠', 'Feed'], ['people', '👥', 'People'], ['jobs', '💼', 'Jobs'], ['help', '🛎', 'Help'], ['profile', '👤', 'Profile']];
   return '<div class="tabbar">' + tabs.map(function(t){ return '<button class="' + (view === t[0] ? 'on' : '') + '" onclick="go(\'' + t[0] + '\')"><span class="ic">' + t[1] + '</span>' + t[2] + '</button>'; }).join('') + '</div>';
 }
 function go(v){ view = v; profileOf = null; render(); window.scrollTo(0, 0); }
@@ -704,13 +782,14 @@ async function toggleConnect(id){
 function render(){
   whoami();
   if (!S) { document.getElementById('main').innerHTML = '<div class="empty">Loading HPSocial…</div>'; return; }
-  if (!me) { renderGate(); return; }
+  if (!me) { if (gateHelp) { document.getElementById('main').innerHTML = renderHelp(); return; } renderGate(); return; }
   if (view === 'return') { document.getElementById('main').innerHTML = renderReturn() + tabbar(); return; }
   if (me.status === 'paused') { document.getElementById('main').innerHTML = renderPaused() + tabbar(); return; }
   var h = '';
   if (profileOf || view === 'profile') h = renderProfile();
   else if (view === 'people') h = renderPeople();
   else if (view === 'jobs') h = renderJobs();
+  else if (view === 'help') h = renderHelp();
   else h = renderFeed();
   document.getElementById('main').innerHTML = h + tabbar();
 }
