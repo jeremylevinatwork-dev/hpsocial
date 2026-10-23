@@ -129,6 +129,11 @@
   .fblink { display:block; text-align:center; color:#a8842a; font-weight:700; font-size:14.5px; margin-top:14px; text-decoration:none; cursor:pointer; }
   .fbdiv { display:flex; align-items:center; gap:12px; margin:20px 0 16px; color:#8496ab; font-size:13px; font-weight:700; }
   .fbdiv:before, .fbdiv:after { content:''; flex:1; border-top:1px solid #dbe5ef; }
+  .selfiebox { border:2px dashed #c9a227; background:#fffdf4; border-radius:14px; padding:14px; margin-top:14px; text-align:center; }
+  .selfiebox img { width:110px; height:110px; border-radius:50%; object-fit:cover; display:block; margin:0 auto 8px; border:3px solid #c9a227; }
+  .selfiebox .sb-t { font-weight:900; font-size:15px; }
+  .selfiebox .sb-s { color:#54687e; font-size:13px; margin-top:3px; line-height:1.45; }
+  .selfiebox button { border:0; border-radius:10px; padding:11px 20px; font-weight:900; font-size:14.5px; background:#0d2138; color:#fff; cursor:pointer; margin-top:9px; }
   .fbjoin { width:100%; border:0; border-radius:9px; padding:13px; font-size:16.5px; font-weight:900; background:#c9a227; color:#12263f; cursor:pointer; margin-top:16px; }
   .empty { text-align:center; color:#8496ab; padding:34px 20px; font-size:15px; line-height:1.6; }
   .ava img, .bigava img { width:100%; height:100%; object-fit:cover; display:block; }
@@ -234,6 +239,7 @@ var S = null;            /* {members:[], hotels:[], posts:[]} */
 var me = null;           /* my member record */
 var view = 'feed', feedFilter = 'all', profileOf = null;
 var gateTab = 'login', pickedHotel = null, cmpType = 'post';
+var joinPic = null;
 var drafts = {};
 
 function esc(s){ return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
@@ -251,20 +257,8 @@ function seedState(){
   var hotels = SEED_HOTELS.map(function(h, i){ return { id: 'seed' + i, name: h[0], brand: h[1], city: h[2], country: h[3], verified: true }; });
   function H(n){ return hotels.filter(function(h){ return h.name === n; })[0].id; }
   var t = Date.now();
-  var members = [
-    { id: 'demo-ana', name: 'Ana Rivas', email: 'ana@hpsocial.app', pw: 'Welcome12345', role: 'Housekeeping', hotelId: H('Hilton Orlando'), status: 'active', connections: ['demo-mateo', 'demo-daniel'], created: t - 86400000 * 40, u: t },
-    { id: 'demo-mateo', name: 'Mateo Kovacs', email: 'mateo@hpsocial.app', pw: 'Welcome12345', role: 'Lifeguard & Recreation', hotelId: H('Atlantis The Palm'), status: 'active', connections: ['demo-ana'], created: t - 86400000 * 31, u: t },
-    { id: 'demo-daniel', name: 'Daniel Chen', email: 'daniel@hpsocial.app', pw: 'Welcome12345', role: 'Management', hotelId: H('Fontainebleau Miami Beach'), status: 'active', connections: ['demo-ana'], created: t - 86400000 * 55, u: t },
-    { id: 'demo-priya', name: 'Priya Shah', email: 'priya@hpsocial.app', pw: 'Welcome12345', role: 'Concierge', hotelId: H('The Savoy'), status: 'active', connections: [], created: t - 86400000 * 22, u: t },
-    { id: 'demo-liwei', name: 'Li Wei', email: 'liwei@hpsocial.app', pw: 'Welcome12345', role: 'Culinary / Kitchen', hotelId: H('The Peninsula Shanghai'), status: 'active', connections: [], created: t - 86400000 * 18, u: t },
-    { id: 'demo-shanice', name: 'Shanice Williams', email: 'shanice@hpsocial.app', pw: 'Welcome12345', role: 'Front Desk', hotelId: H('Sandals Montego Bay'), status: 'between', connections: [], created: t - 86400000 * 12, u: t }
-  ];
-  var posts = [
-    { id: 'seed-p1', uid: 'demo-ana', type: 'shout', toUid: null, text: 'Shout-out to my whole PM crew — 214 rooms turned on a sold-out storm night. This team is unreal. 🏆', likes: ['demo-mateo', 'demo-daniel'], likesTs: t - 3600000 * 5, comments: [{ uid: 'demo-mateo', n: 'Mateo Kovacs', t: t - 3600000 * 4, text: 'Legends. All of you.' }], commentsTs: t - 3600000 * 4, interested: [], reports: [], ts: t - 3600000 * 6 },
-    { id: 'seed-p2', uid: 'demo-daniel', type: 'job', jobRole: 'Night Auditor', text: 'We are hiring a Night Auditor for the front office team. Great property, great crew — apply through me here.', likes: [], likesTs: 0, comments: [], commentsTs: 0, interested: ['demo-shanice'], reports: [], ts: t - 3600000 * 9 },
-    { id: 'seed-p3', uid: 'demo-priya', type: 'shout', toUid: 'demo-liwei', text: 'Li Wei quietly remade a guest\u2019s whole anniversary dinner after our kitchen lost power. Nobody asked him to. That is hospitality.', likes: ['demo-ana'], likesTs: t - 3600000 * 2, comments: [], commentsTs: 0, interested: [], reports: [], ts: t - 3600000 * 3 },
-    { id: 'seed-p4', uid: 'demo-mateo', type: 'post', text: 'Sunrise shift at the waterpark. Best office in the world. 🌅', likes: ['demo-ana', 'demo-priya'], likesTs: t - 3600000, comments: [], commentsTs: 0, interested: [], reports: [], ts: t - 3600000 * 2 }
-  ];
+  var members = [];
+  var posts = [];
   return { members: members, hotels: hotels, posts: posts };
 }
 
@@ -305,6 +299,18 @@ function unionState(a, b){
   var pp = {}; a.posts.forEach(function(x){ pp[x.id] = x; });
   b.posts.forEach(function(x){ pp[x.id] = pp[x.id] ? mergePost(pp[x.id], x) : x; });
   out.posts = Object.keys(pp).map(function(k){ return pp[k]; }).sort(function(x, y){ return y.ts - x.ts; });
+  /* No fake profiles: any legacy demo data is stripped on every sync. */
+  function notDemo(id){ return String(id).indexOf('demo-') !== 0; }
+  out.members = out.members.filter(function(m){ return notDemo(m.id); });
+  out.members.forEach(function(m){ m.connections = (m.connections || []).filter(notDemo); });
+  out.posts = out.posts.filter(function(p){ return notDemo(p.uid); });
+  out.posts.forEach(function(p){
+    p.likes = (p.likes || []).filter(notDemo);
+    p.comments = (p.comments || []).filter(function(c){ return notDemo(c.uid); });
+    p.interested = (p.interested || []).filter(notDemo);
+    p.reports = (p.reports || []).filter(notDemo);
+  });
+  out.hotels = out.hotels.filter(function(h){ return h.name !== 'Loews Portofino Bay Hotel' && h.name !== 'Loews Royal Pacific Resort'; });
   return out;
 }
 function saveCache(){ try { localStorage.setItem('hps-cache', JSON.stringify(S)); localStorage.setItem('hps-me', me ? me.id : ''); } catch (e) {} }
@@ -345,7 +351,7 @@ function renderGate(){
       + '<input id="j-email" type="email" autocomplete="email" placeholder="Email">'
       + '<input id="j-pw" type="password" autocomplete="new-password" placeholder="Create a password (12+ characters)">'
       + '<select id="j-role">' + ROLES.map(function(r){ return '<option>' + esc(r) + '</option>'; }).join('') + '</select>'
-      + '<label class="f">Find your hotel — every hotel, worldwide</label><div id="hotelpick"></div>'
+      + '<label class="f">Find your hotel — every hotel, worldwide</label><div id="hotelpick"></div><div id="selfiebox"></div>'
       + '<div id="gate-err"></div>'
       + '<button class="fbjoin" onclick="doJoin()">Join HPSocial</button>'
       + '<div class="hint">If you leave hospitality, your profile pauses until you are back — your shout-outs and connections are kept safe.</div>'
@@ -354,7 +360,7 @@ function renderGate(){
   }
   h += '</div></div>';
   document.getElementById('main').innerHTML = h;
-  if (gateTab === 'join') renderHotelPick();
+  if (gateTab === 'join') { renderHotelPick(); renderSelfieBox(); }
 }
 function renderHotelPick(){
   var box = document.getElementById('hotelpick'); if (!box) return;
@@ -397,9 +403,10 @@ async function doJoin(){
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return gateErr('Please enter a valid email — that is your login.');
   if (!pw || pw.length < 12) return gateErr('Password must be at least 12 characters.');
   if (!pickedHotel) return gateErr('Pick your hotel — that is what verifies you work in hospitality.');
+  if (!joinPic) return gateErr('Take your photo to prove you are a real person — it becomes your profile picture.');
   if (S.members.some(function(m){ return (m.email || '').toLowerCase() === em; })) return gateErr('That email already has an account — use Log In.');
-  var m = { id: uid('m'), name: n, email: em, pw: pw, role: role, hotelId: pickedHotel, status: 'active', connections: [], created: Date.now(), u: Date.now() };
-  S.members.push(m); me = m; await push(); saveCache(); render();
+  var m = { id: uid('m'), name: n, email: em, pw: pw, role: role, hotelId: pickedHotel, status: 'active', connections: [], created: Date.now(), u: Date.now(), pic: joinPic, selfie: true, selfieAt: Date.now() };
+  S.members.push(m); me = m; joinPic = null; await push(); saveCache(); render();
 }
 async function doLogin(){
   var em = document.getElementById('l-email').value.trim().toLowerCase(), pw = document.getElementById('l-pw').value;
@@ -526,7 +533,7 @@ function renderProfile(){
   var h = '<div class="view"><div class="cover"></div><div class="profcard">' + '<div class="bigava" style="background:' + avColor(m.id) + '">' + (m.pic ? '<img src="' + m.pic + '" alt="">' : esc(initials(m.name))) + '</div>'
     + '<div class="profname">' + esc(m.name) + '</div>'
     + '<div class="pmeta" style="font-size:13.5px">' + esc(m.role) + ' · ' + (hh ? esc(hh.name) + (hh.city ? ' · ' + esc(hh.city) : '') + (hh.country ? ', ' + esc(hh.country) : '') : '') + '</div>'
-    + '<div style="margin-top:7px">' + statusBadge(m) + '</div>'
+    + '<div style="margin-top:7px">' + statusBadge(m) + (m.selfie ? ' <span style="color:#2e7d32;font-weight:800;font-size:12.5px">✓ Photo-verified — real person</span>' : '') + '</div>'
     + '<div class="stats"><div><b>' + m.connections.length + '</b><span>Connections</span></div><div><b>' + shoutCountFor(m.id) + '</b><span>Shout-outs</span></div><div><b>' + Math.max(0, Math.round((Date.now() - (m.created || Date.now())) / 86400000 / 30)) + '</b><span>Months in</span></div></div>'
     + (!mine && me ? '<button class="connbtn' + (conn ? ' on' : '') + '" style="width:100%;margin:13px 0 2px" onclick="toggleConnect(\'' + m.id + '\')">' + (conn ? '✓ Connected' : 'Connect') + '</button>' : '')
     + '</div>';
@@ -579,7 +586,7 @@ async function setStatus(st){
   me.status = st; me.u = Date.now(); await push(); render();
 }
 
-function picChosen(inp){
+function snapFile(inp, cb){
   var f = inp.files && inp.files[0]; if (!f) return;
   var rd = new FileReader();
   rd.onload = function(){
@@ -591,15 +598,26 @@ function picChosen(inp){
           var max = 320, w = img.width, h = img.height, k = Math.min(1, max / Math.max(w, h));
           var cv = document.createElement('canvas'); cv.width = Math.round(w * k); cv.height = Math.round(h * k);
           cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-          savePic(cv.toDataURL('image/jpeg', 0.85));
-        } catch (e) { savePic(raw); }
+          cb(cv.toDataURL('image/jpeg', 0.85));
+        } catch (e) { cb(raw); }
       };
-      img.onerror = function(){ savePic(raw); };
+      img.onerror = function(){ cb(raw); };
       img.src = raw;
-    } catch (e) { savePic(raw); }
+    } catch (e) { cb(raw); }
   };
   rd.readAsDataURL(f);
 }
+function picChosen(inp){ snapFile(inp, function(url){ savePic(url); }); }
+function renderSelfieBox(){
+  var box = document.getElementById('selfiebox'); if (!box) return;
+  if (joinPic) {
+    box.innerHTML = '<div class="selfiebox"><img src="' + joinPic + '"><div class="sb-t">✓ That\'s you — real and verified</div><div class="sb-s">This photo becomes your profile picture.</div><input type="file" id="j-selfie-file" accept="image/*" capture="user" style="display:none" onchange="selfieChosen(this)"><button onclick="document.getElementById(\'j-selfie-file\').click()">Retake photo</button></div>';
+  } else {
+    box.innerHTML = '<div class="selfiebox"><div style="font-size:34px">📸</div><div class="sb-t">Prove you\'re a real person</div><div class="sb-s">Take a selfie to finish signing up. No fake profiles, no robots — your photo becomes your profile picture.</div><input type="file" id="j-selfie-file" accept="image/*" capture="user" style="display:none" onchange="selfieChosen(this)"><button onclick="document.getElementById(\'j-selfie-file\').click()">📸 Take your photo</button></div>';
+  }
+}
+function selfieChosen(inp){ snapFile(inp, function(url){ setJoinPic(url); }); }
+function setJoinPic(url){ joinPic = url; renderSelfieBox(); }
 async function savePic(url){ me.pic = url; me.u = Date.now(); await push(); render(); }
 async function clearPic(){ if (!confirm('Remove your profile photo?')) return; delete me.pic; me.u = Date.now(); await push(); render(); }
 
@@ -680,7 +698,7 @@ window.hpsRender = render;
 setInterval(function(){ if (me && document.visibilityState === 'visible') pull(); }, 30000);
 document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible' && me) pull(); });
 (async function boot(){
-  try { if (localStorage.getItem('hps-v') !== '2') { localStorage.removeItem('hps-cache'); localStorage.removeItem('hps-me'); localStorage.setItem('hps-v', '2'); } } catch (e) {}
+  try { if (localStorage.getItem('hps-v') !== '3') { localStorage.removeItem('hps-cache'); localStorage.removeItem('hps-me'); localStorage.setItem('hps-v', '3'); } } catch (e) {}
   loadCache();
   var savedMe = null;
   try { savedMe = localStorage.getItem('hps-me'); } catch (e) {}
