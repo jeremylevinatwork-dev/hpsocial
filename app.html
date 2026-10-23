@@ -420,7 +420,7 @@ function renderFeed(){
     + [['all', '🌍 Everyone'], ['mine', '🏨 My property'], ['near', '📍 My country'], ['shouts', '🏆 Shout-outs'], ['jobs', '💼 Jobs']].map(function(f){ return '<button class="' + (feedFilter === f[0] ? 'on' : '') + '" onclick="feedFilter=\'' + f[0] + '\';render()">' + f[1] + '</button>'; }).join('') + '</div>';
   var list = feedPosts();
   h += list.length ? list.map(postCard).join('') : '<div class="empty">Nothing here yet — be the first to post.</div>';
-  h += '<div class="foot">HPSocial · Hospitality only · Power by: NDL systems tech</div></div>';
+  h += '<div class="foot">HPSocial · Hospitality only, worldwide</div></div>';
   return h;
 }
 function renderPeople(){
