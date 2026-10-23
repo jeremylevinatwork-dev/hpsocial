@@ -150,6 +150,8 @@
   .hrow { display:flex; gap:8px; }
   .hrow input { flex:1; border:1.5px solid #d9dee5; border-radius:12px; padding:12px; font-size:15px; min-width:0; }
   .hrow button { border:0; border-radius:12px; padding:12px 18px; font-weight:900; background:#c9a227; color:#231a00; cursor:pointer; }
+  .tabbar button { position:relative; }
+  .nbadge { position:absolute; top:4px; right:calc(50% - 19px); min-width:17px; height:17px; border-radius:9px; background:#d33f2e; color:#fff; font-size:10.5px; font-weight:900; display:flex; align-items:center; justify-content:center; padding:0 4px; }
   .hback { display:inline-block; margin-bottom:10px; color:#29425e; font-weight:800; font-size:14px; cursor:pointer; }
   .fbjoin { width:100%; border:0; border-radius:9px; padding:13px; font-size:16.5px; font-weight:900; background:#c9a227; color:#12263f; cursor:pointer; margin-top:16px; }
   .empty { text-align:center; color:#8496ab; padding:34px 20px; font-size:15px; line-height:1.6; }
@@ -280,7 +282,7 @@ function seedState(){
   var t = Date.now();
   var members = [];
   var posts = [];
-  return { members: members, hotels: hotels, posts: posts };
+  return { members: members, hotels: hotels, posts: posts, msgs: [] };
 }
 
 async function sbGet(){
@@ -310,7 +312,7 @@ function mergePost(lp, cp){
 }
 function unionState(a, b){
   if (!a) return b; if (!b) return a;
-  var out = { members: [], hotels: [], posts: [] }, i, m;
+  var out = { members: [], hotels: [], posts: [], msgs: [] }, i, m;
   var mm = {}; a.members.forEach(function(x){ mm[x.id] = x; });
   b.members.forEach(function(x){ if (!mm[x.id] || (x.u || 0) >= (mm[x.id].u || 0)) mm[x.id] = x; });
   out.members = Object.keys(mm).map(function(k){ return mm[k]; });
@@ -332,6 +334,14 @@ function unionState(a, b){
     p.reports = (p.reports || []).filter(notDemo);
   });
   out.hotels = out.hotels.filter(function(h){ return h.name !== 'Loews Portofino Bay Hotel' && h.name !== 'Loews Royal Pacific Resort'; });
+  var gg = {};
+  (a.msgs || []).forEach(function(x){ gg[x.id] = x; });
+  (b.msgs || []).forEach(function(x){
+    if (!gg[x.id]) gg[x.id] = x;
+    else if (x.read && !gg[x.id].read) { var c = Object.assign({}, gg[x.id]); c.read = true; gg[x.id] = c; }
+  });
+  out.msgs = Object.keys(gg).map(function(k){ return gg[k]; }).filter(function(g){ return notDemo(g.from) && notDemo(g.to); }).sort(function(x, y){ return x.ts - y.ts; });
+  if (out.msgs.length > 3000) out.msgs = out.msgs.slice(out.msgs.length - 3000);
   return out;
 }
 function saveCache(){ try { localStorage.setItem('hps-cache', JSON.stringify(S)); localStorage.setItem('hps-me', me ? me.id : ''); } catch (e) {} }
@@ -509,8 +519,9 @@ function whoami(){
   el.innerHTML = '<b>' + esc(me.name) + '</b><br>' + (hh ? esc(hh.name) : '') + ' · <a href="#" style="color:#f3d27a" onclick="doLogout();return false;">Log out</a>';
 }
 function tabbar(){
-  var tabs = [['feed', '🏠', 'Feed'], ['people', '👥', 'People'], ['jobs', '💼', 'Jobs'], ['help', '🛎', 'Help'], ['profile', '👤', 'Profile']];
-  return '<div class="tabbar">' + tabs.map(function(t){ return '<button class="' + (view === t[0] ? 'on' : '') + '" onclick="go(\'' + t[0] + '\')"><span class="ic">' + t[1] + '</span>' + t[2] + '</button>'; }).join('') + '</div>';
+  var tabs = [['feed', '🏠', 'Feed'], ['people', '👥', 'People'], ['msgs', '💬', 'Chats'], ['jobs', '💼', 'Jobs'], ['help', '🛎', 'Help'], ['profile', '👤', 'Profile']];
+  var un = me ? unreadCount() : 0;
+  return '<div class="tabbar">' + tabs.map(function(t){ return '<button class="' + (view === t[0] || (t[0] === 'msgs' && view === 'thread') ? 'on' : '') + '" onclick="go(\'' + t[0] + '\')"><span class="ic">' + t[1] + '</span>' + t[2] + (t[0] === 'msgs' && un ? '<span class="nbadge">' + un + '</span>' : '') + '</button>'; }).join('') + '</div>';
 }
 function go(v){ view = v; profileOf = null; render(); window.scrollTo(0, 0); }
 function shoutCountFor(id){ return S.posts.filter(function(p){ return p.type === 'shout' && p.toUid === id && !(p.reports && p.reports.length >= 2); }).length; }
@@ -619,7 +630,7 @@ function renderProfile(){
     + '<div class="pmeta" style="font-size:13.5px">' + esc(m.role) + ' · ' + (hh ? esc(hh.name) + (hh.city ? ' · ' + esc(hh.city) : '') + (hh.country ? ', ' + esc(hh.country) : '') : '') + '</div>'
     + '<div style="margin-top:7px">' + statusBadge(m) + (m.selfie ? ' <span style="color:#2e9e4f;font-weight:800;font-size:12.5px">\u2713 Confirmed — real person</span>' : ' <span style="color:#b45309;font-weight:800;font-size:12.5px">Not confirmed</span>') + '</div>'
     + '<div class="stats"><div><b>' + m.connections.length + '</b><span>Connections</span></div><div><b>' + shoutCountFor(m.id) + '</b><span>Shout-outs</span></div><div><b>' + Math.max(0, Math.round((Date.now() - (m.created || Date.now())) / 86400000 / 30)) + '</b><span>Months in</span></div></div>'
-    + (!mine && me ? '<button class="connbtn' + (conn ? ' on' : '') + '" style="width:100%;margin:13px 0 2px" onclick="toggleConnect(\'' + m.id + '\')">' + (conn ? '✓ Connected' : 'Connect') + '</button>' : '')
+    + (!mine && me ? '<div style="display:flex;gap:8px;margin:13px 0 2px"><button class="bigbtn" style="flex:1;margin:0" onclick="openThread(\'' + m.id + '\')">💬 Message</button><button class="connbtn' + (conn ? ' on' : '') + '" style="flex:1;margin:0" onclick="toggleConnect(\'' + m.id + '\')">' + (conn ? '✓ Connected' : 'Connect') + '</button></div>' : '')
     + '</div>';
   var shouts = S.posts.filter(function(p){ return p.type === 'shout' && p.toUid === m.id && postVisible(p); }).sort(function(a, b){ return b.ts - a.ts; });
   h += '<div class="secttl">🏆 Shout-outs received</div>';
@@ -778,6 +789,72 @@ async function toggleConnect(id){
   me.u = Date.now(); other.u = Date.now(); await push(); render();
 }
 
+
+/* ============ Messenger ============ */
+var msgWith = null, msgDraft = '';
+function unreadCount(){ return (S.msgs || []).filter(function(g){ return g.to === me.id && !g.read; }).length; }
+function unreadFrom(id){ return (S.msgs || []).filter(function(g){ return g.to === me.id && g.from === id && !g.read; }).length; }
+function lastMsgWith(id){
+  var list = (S.msgs || []).filter(function(g){ return (g.from === me.id && g.to === id) || (g.from === id && g.to === me.id); });
+  return list.length ? list[list.length - 1] : null;
+}
+async function openThread(id){
+  msgWith = id; msgDraft = '';
+  var changed = false;
+  (S.msgs || []).forEach(function(g){ if (g.from === id && g.to === me.id && !g.read) { g.read = true; changed = true; } });
+  view = 'thread'; profileOf = null; render(); window.scrollTo(0, 0);
+  if (changed) { await push(); saveCache(); }
+}
+function renderMsgs(){
+  var partners = {};
+  (S.msgs || []).forEach(function(g){ if (g.from === me.id) partners[g.to] = 1; if (g.to === me.id) partners[g.from] = 1; });
+  var ids = Object.keys(partners).filter(function(id){ return memberById(id); });
+  ids.sort(function(x, y){ var lx = lastMsgWith(x), ly = lastMsgWith(y); return ((ly && ly.ts) || 0) - ((lx && lx.ts) || 0); });
+  var h = '<div class="view"><div class="secttl" style="margin-top:2px">💬 Messages</div>';
+  if (ids.length) {
+    h += ids.map(function(id){
+      var m = memberById(id), last = lastMsgWith(id), un = unreadFrom(id);
+      return '<div class="member" onclick="openThread(\'' + id + '\')">' + ava(m)
+        + '<div style="flex:1;min-width:0"><div class="pnm" style="font-size:15.5px">' + esc(m.name) + '</div>'
+        + '<div class="pmeta" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (last ? (last.from === me.id ? 'You: ' : '') + esc(last.text) : '') + '</div></div>'
+        + '<div style="text-align:right;flex:none">' + (last ? '<div style="color:#8496ab;font-size:11.5px">' + ago(last.ts) + '</div>' : '') + (un ? '<div class="nbadge" style="position:static;margin-top:4px">' + un + '</div>' : '') + '</div></div>';
+    }).join('');
+  } else {
+    h += '<div class="empty">No conversations yet. Message someone below, or tap 💬 Message on any profile.</div>';
+  }
+  var others = S.members.filter(function(m){ return m.id !== me.id && m.status !== 'paused' && !partners[m.id]; });
+  if (others.length) {
+    h += '<div class="secttl">Start a chat</div>' + others.map(function(m){
+      var hh = hotelById(m.hotelId);
+      return '<div class="member" onclick="openThread(\'' + m.id + '\')">' + ava(m)
+        + '<div><div class="pnm" style="font-size:15.5px">' + esc(m.name) + '</div><div class="pmeta">' + esc(m.role) + ' · ' + (hh ? esc(hh.name) : '') + '</div></div></div>';
+    }).join('');
+  }
+  h += '<div class="foot">Private chats between HPSocial members.</div></div>';
+  return h;
+}
+function renderThread(){
+  var m = memberById(msgWith);
+  if (!m) return '<div class="view"><div class="empty">Conversation not found.</div></div>';
+  var list = (S.msgs || []).filter(function(g){ return (g.from === me.id && g.to === m.id) || (g.from === m.id && g.to === me.id); });
+  var h = '<div class="view"><a class="hback" onclick="go(\'msgs\')">← All chats</a>'
+    + '<div class="hhead" style="cursor:pointer" onclick="openProfile(\'' + m.id + '\')">' + ava(m) + '<div><div class="ht">' + esc(m.name) + '</div><div class="hs">' + esc(m.role) + ' · ' + esc((hotelById(m.hotelId) || {}).name || '') + '</div></div></div>'
+    + '<div class="hmsgs">'
+    + (list.length ? list.map(function(g){ return '<div class="hbub ' + (g.from === me.id ? 'me' : 'bot') + '">' + esc(g.text) + '<div style="font-size:10.5px;opacity:.65;margin-top:3px">' + ago(g.ts) + (g.from === me.id && g.read ? ' · Seen' : '') + '</div></div>'; }).join('') : '<div class="empty">Say hello to ' + esc(firstName(m.name)) + ' 👋</div>')
+    + '</div>'
+    + '<div class="hrow"><input id="msg-in" placeholder="Message ' + esc(firstName(m.name)) + '…" value="' + esc(msgDraft) + '" oninput="msgDraft=this.value" onkeydown="if(event.key===\'Enter\')sendMsg()"><button onclick="sendMsg()">Send</button></div>'
+    + '</div>';
+  setTimeout(function(){ window.scrollTo(0, document.body.scrollHeight); var i = document.getElementById('msg-in'); if (i && msgDraft) i.focus(); }, 30);
+  return h;
+}
+async function sendMsg(){
+  var i = document.getElementById('msg-in'); if (!i) return;
+  var t = i.value.trim(); if (!t || !msgWith) return;
+  if (!S.msgs) S.msgs = [];
+  S.msgs.push({ id: uid('g'), from: me.id, to: msgWith, text: t, ts: Date.now(), read: false });
+  msgDraft = ''; await push(); saveCache(); render();
+}
+
 /* ============ render & boot ============ */
 function render(){
   whoami();
@@ -790,6 +867,8 @@ function render(){
   else if (view === 'people') h = renderPeople();
   else if (view === 'jobs') h = renderJobs();
   else if (view === 'help') h = renderHelp();
+  else if (view === 'msgs') h = renderMsgs();
+  else if (view === 'thread') h = renderThread();
   else h = renderFeed();
   document.getElementById('main').innerHTML = h + tabbar();
 }
@@ -798,7 +877,7 @@ setInterval(function(){ if (me && document.visibilityState === 'visible') pull()
 document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible' && me) pull(); });
 (async function boot(){
   try { if (localStorage.getItem('hps-v') !== '3') { localStorage.removeItem('hps-cache'); localStorage.removeItem('hps-me'); localStorage.setItem('hps-v', '3'); } } catch (e) {}
-  loadCache();
+  loadCache(); if (S && !S.msgs) S.msgs = [];
   var savedMe = null;
   try { savedMe = localStorage.getItem('hps-me'); } catch (e) {}
   if (S && savedMe) me = memberById(savedMe);
