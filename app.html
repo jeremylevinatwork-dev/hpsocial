@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HPSocial — Hospitality Professionals Social</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif; background:#0a1a2c; color:#12263f; }
+  #col { max-width:560px; margin:0 auto; min-height:100vh; background:#eef2f7; display:flex; flex-direction:column; box-shadow:0 0 60px rgba(0,0,0,.5); }
+  /* header */
+  .appbar { background:linear-gradient(135deg,#0d2138,#16324f); color:#fff; padding:14px 16px 12px; display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:40; }
+  .appbar img { width:38px; height:38px; border-radius:10px; }
+  .appbar .t { font-family:Georgia,serif; font-weight:700; font-size:23px; }
+  .appbar .t b { color:#c9a227; }
+  .appbar .who { margin-left:auto; text-align:right; font-size:12px; color:#aebfd2; font-weight:700; line-height:1.35; }
+  .appbar .who b { color:#fff; font-size:13.5px; }
+  .sync { font-size:11px; font-weight:800; padding:6px 16px; background:#dbe5ef; color:#54687e; }
+  .sync.off { background:#f6ddb8; color:#7a4a12; }
+  /* gate */
+  .gate { padding:26px 20px 40px; }
+  .gate .mark { width:86px; height:86px; border-radius:22px; display:block; margin:6px auto 12px; box-shadow:0 12px 26px rgba(13,33,56,.3); }
+  .gate h1 { font-family:Georgia,serif; text-align:center; font-size:36px; }
+  .gate h1 b { color:#a8842a; }
+  .gate .sub { text-align:center; color:#54687e; font-weight:700; letter-spacing:2.5px; font-size:11.5px; text-transform:uppercase; margin-top:4px; }
+  .gate .tag { text-align:center; font-family:Georgia,serif; font-style:italic; color:#29425e; margin-top:12px; font-size:17px; }
+  .card { background:#fff; border-radius:18px; padding:18px; margin-top:18px; box-shadow:0 3px 14px rgba(13,33,56,.09); }
+  .tabs { display:flex; gap:8px; }
+  .tabs button { flex:1; border:0; border-radius:12px; padding:11px; font-size:15px; font-weight:900; background:#e3eaf2; color:#29425e; cursor:pointer; }
+  .tabs button.on { background:#0d2138; color:#fff; }
+  label.f { display:block; font-size:12px; font-weight:900; letter-spacing:1px; text-transform:uppercase; color:#8496ab; margin:14px 0 6px; }
+  input, select, textarea { width:100%; border:1.5px solid #cfdce9; border-radius:12px; padding:12px; font-size:16px; font-family:inherit; background:#fbfcfe; color:#12263f; }
+  input:focus, select:focus, textarea:focus { outline:2px solid #c9a227; border-color:#c9a227; }
+  textarea { resize:vertical; min-height:64px; }
+  .bigbtn { width:100%; border:0; border-radius:13px; padding:14px; font-size:16.5px; font-weight:900; background:#c9a227; color:#12263f; cursor:pointer; margin-top:16px; }
+  .bigbtn:active { transform:scale(.99); }
+  .ghostbtn { width:100%; border:1.5px solid #b9c9da; border-radius:13px; padding:12px; font-size:15px; font-weight:800; background:#fff; color:#29425e; cursor:pointer; margin-top:10px; }
+  .err { color:#b3261e; font-weight:700; font-size:14px; margin-top:10px; text-align:center; }
+  .hint { color:#8496ab; font-size:13px; text-align:center; margin-top:12px; line-height:1.5; }
+  /* hotel search */
+  .hresults { border:1.5px solid #cfdce9; border-top:0; border-radius:0 0 12px 12px; max-height:260px; overflow:auto; background:#fff; }
+  .hresults div { padding:11px 12px; border-top:1px solid #eef2f7; cursor:pointer; }
+  .hresults div:active, .hresults div:hover { background:#fdf6e0; }
+  .hresults .hn { font-weight:800; font-size:15px; }
+  .hresults .hm { color:#8496ab; font-size:12.5px; font-weight:700; }
+  .hpicked { background:#fdf6e0; border:1.5px solid #c9a227; border-radius:12px; padding:11px 12px; font-weight:800; }
+  .hpicked .hm { color:#7a5b12; font-size:12.5px; font-weight:700; }
+  .hpicked button { float:right; border:0; background:none; color:#a8842a; font-weight:900; font-size:14px; cursor:pointer; }
+  /* views */
+  .view { padding:12px 12px 86px; flex:1; }
+  .composer { background:#fff; border-radius:16px; padding:13px; box-shadow:0 2px 8px rgba(13,33,56,.07); }
+  .chips { display:flex; gap:7px; margin-bottom:10px; }
+  .chips button { border:1.5px solid #cfdce9; background:#fff; border-radius:999px; padding:6px 13px; font-size:13.5px; font-weight:800; color:#54687e; cursor:pointer; }
+  .chips button.on { background:#0d2138; color:#fff; border-color:#0d2138; }
+  .chips button.on.gold { background:#c9a227; color:#12263f; border-color:#c9a227; }
+  .crow { display:flex; gap:9px; margin-top:9px; }
+  .crow select { flex:1; }
+  .crow .post { flex:0 0 auto; border:0; border-radius:11px; padding:0 22px; background:#c9a227; color:#12263f; font-weight:900; font-size:15px; cursor:pointer; }
+  .filters { display:flex; gap:7px; margin:13px 0 3px; overflow-x:auto; padding-bottom:2px; }
+  .filters button { white-space:nowrap; border:0; background:#dbe5ef; color:#29425e; border-radius:999px; padding:7px 14px; font-size:13.5px; font-weight:800; cursor:pointer; }
+  .filters button.on { background:#0d2138; color:#fff; }
+  .post2 { background:#fff; border-radius:16px; padding:14px; margin-top:11px; box-shadow:0 2px 8px rgba(13,33,56,.07); }
+  .post2.shout { border:1.5px solid #c9a227; background:linear-gradient(180deg,#fffdf4,#fff); }
+  .post2.jobp { border:1.5px solid #c9a227; background:linear-gradient(120deg,#fdf6e0,#fffaf0); }
+  .pwho { display:flex; gap:10px; align-items:center; }
+  .ava { width:44px; height:44px; border-radius:50%; flex:0 0 auto; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:16px; color:#fff; }
+  .ava.sm { width:34px; height:34px; font-size:12.5px; }
+  .pnm { font-weight:900; font-size:16px; }
+  .pmeta { color:#8496ab; font-size:12.5px; font-weight:600; line-height:1.35; }
+  .pdel { margin-left:auto; border:0; background:none; color:#b3261e; font-size:16px; cursor:pointer; padding:4px; }
+  .ptxt { font-size:15.5px; line-height:1.5; margin-top:9px; white-space:pre-wrap; word-wrap:break-word; }
+  .jobtag { display:inline-block; background:#c9a227; color:#12263f; font-size:11px; font-weight:900; letter-spacing:1.2px; padding:3px 9px; border-radius:999px; margin-bottom:6px; }
+  .jobrole { font-family:Georgia,serif; font-size:19px; font-weight:700; }
+  .shoutto { color:#7a5b12; font-weight:800; font-size:13.5px; margin-top:2px; }
+  .pbar { display:flex; gap:16px; margin-top:11px; padding-top:10px; border-top:1px solid #e6ecf3; font-size:13.5px; font-weight:800; color:#54687e; align-items:center; }
+  .pbar button { border:0; background:none; font:inherit; color:inherit; cursor:pointer; padding:0; }
+  .pbar .liked { color:#a8842a; }
+  .pbar .rep { margin-left:auto; font-size:12px; color:#a8b8c8; }
+  .intbtn { margin-left:auto; border:0; background:#0d2138; color:#fff; border-radius:9px; padding:7px 14px; font-weight:800; font-size:13px; cursor:pointer; }
+  .intbtn.on { background:#2e7d32; }
+  .likenames { font-size:12px; color:#a8842a; font-weight:700; margin-top:6px; }
+  .cmts { margin-top:9px; }
+  .cmt { display:flex; gap:8px; margin-top:8px; font-size:14px; line-height:1.45; }
+  .cmt .cb { background:#f2f5f9; border-radius:12px; padding:7px 11px; flex:1; }
+  .cmt .cb b { font-size:13.5px; }
+  .cmt .cw { color:#8496ab; font-size:11.5px; font-weight:700; }
+  .cmt .cdel { border:0; background:none; color:#b3261e; font-size:13px; cursor:pointer; align-self:flex-start; }
+  .cbox { display:flex; gap:8px; margin-top:10px; }
+  .cbox input { flex:1; padding:9px 12px; font-size:14.5px; border-radius:999px; }
+  .cbox button { border:0; background:#0d2138; color:#fff; border-radius:999px; padding:0 17px; font-weight:800; font-size:14px; cursor:pointer; }
+  /* people + profile */
+  .member { background:#fff; border-radius:16px; padding:13px; margin-top:10px; display:flex; gap:11px; align-items:center; box-shadow:0 2px 8px rgba(13,33,56,.06); cursor:pointer; }
+  .member.paused { opacity:.62; }
+  .badge { display:inline-block; font-size:10.5px; font-weight:900; letter-spacing:.8px; padding:2.5px 8px; border-radius:999px; text-transform:uppercase; }
+  .badge.act { background:#dcefe0; color:#2e7d32; }
+  .badge.bet { background:#f6ddb8; color:#7a4a12; }
+  .badge.pau { background:#e3e7ec; color:#54687e; }
+  .connbtn { margin-left:auto; border:0; border-radius:10px; padding:9px 15px; font-weight:900; font-size:13.5px; background:#c9a227; color:#12263f; cursor:pointer; flex:0 0 auto; }
+  .connbtn.on { background:#e3eaf2; color:#54687e; }
+  .cover { height:118px; border-radius:18px 18px 0 0; background:linear-gradient(120deg,#0d2138,#1d4066 60%,#c9a227 160%); margin:-12px -12px 0; }
+  .profcard { background:#fff; border-radius:0 0 18px 18px; padding:0 16px 16px; box-shadow:0 2px 8px rgba(13,33,56,.08); }
+  .bigava { width:82px; height:82px; border-radius:50%; border:4px solid #fff; margin-top:-41px; display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:900; color:#fff; position:relative; }
+  .profname { font-family:Georgia,serif; font-size:25px; font-weight:700; margin-top:7px; }
+  .stats { display:flex; margin-top:13px; border-top:1px solid #e6ecf3; padding-top:11px; }
+  .stats div { flex:1; text-align:center; }
+  .stats b { font-size:19px; display:block; }
+  .stats span { font-size:10px; color:#8496ab; font-weight:800; letter-spacing:.5px; text-transform:uppercase; }
+  .secttl { font-size:12.5px; letter-spacing:1.5px; color:#a8842a; text-transform:uppercase; font-weight:900; margin:18px 0 4px; }
+  .pausedbox { background:#12263f; color:#fff; border-radius:18px; padding:24px 20px; text-align:center; margin-top:16px; }
+  .pausedbox h2 { font-family:Georgia,serif; font-size:24px; margin-bottom:8px; }
+  .pausedbox p { color:#aebfd2; line-height:1.55; font-size:15px; }
+  /* tabbar */
+  .tabbar { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:560px; background:#fff; border-top:1px solid #dbe5ef; display:flex; z-index:50; padding-bottom:env(safe-area-inset-bottom); }
+  .tabbar button { flex:1; border:0; background:none; padding:9px 0 11px; font-size:11px; font-weight:800; color:#8496ab; cursor:pointer; }
+  .tabbar button .ic { display:block; font-size:21px; margin-bottom:1px; }
+  .tabbar button.on { color:#a8842a; }
+  .empty { text-align:center; color:#8496ab; padding:34px 20px; font-size:15px; line-height:1.6; }
+  .foot { text-align:center; color:#8496ab; font-size:12px; padding:6px 0 16px; font-weight:700; }
+</style>
+</head>
+<body>
+<div id="col">
+  <div class="appbar"><img src="bell-mark.png" alt=""><div class="t"><b>HPS</b>ocial</div><div class="who" id="whoami"></div></div>
+  <div class="sync" id="syncbadge">● Connecting…</div>
+  <div id="main"></div>
+</div>
+
+<script>
+var SB_URL = 'https://qxqrwusaynfqadjfqswe.supabase.co';
+var SB_KEY = 'sb_publishable_2ba9yzEA89uqXHJ6v-_cQg_AmwwEfFF';
+var ROW = 'hpsocial-state';
+
+var ROLES = ['Front Desk','Housekeeping','Food & Beverage','Culinary / Kitchen','Concierge','Security','Engineering & Maintenance','Lifeguard & Recreation','Valet & Transportation','Spa & Wellness','Sales & Events','Management','Other'];
+var AVCOLORS = ['#7a4a12','#28536b','#a03c50','#285b2a','#6b2848','#4a3a7a','#7a5b12','#1d5c6e'];
+var SEED_HOTELS = [
+ ['Hilton Orlando','Hilton','Orlando, FL','United States'],['Marriott Orlando World Center','Marriott','Orlando, FL','United States'],
+ ['Loews Portofino Bay Hotel','Loews','Orlando, FL','United States'],['Loews Royal Pacific Resort','Loews','Orlando, FL','United States'],
+ ['Hard Rock Hotel Orlando','Hard Rock','Orlando, FL','United States'],['Walt Disney World Swan','Westin','Orlando, FL','United States'],
+ ['Fontainebleau Miami Beach','Independent','Miami Beach, FL','United States'],['The Setai Miami Beach','Independent','Miami Beach, FL','United States'],
+ ['Bellagio Las Vegas','MGM','Las Vegas, NV','United States'],['Caesars Palace','Caesars','Las Vegas, NV','United States'],
+ ['The Plaza New York','Fairmont','New York, NY','United States'],['The Ritz-Carlton New York','Ritz-Carlton','New York, NY','United States'],
+ ['Waldorf Astoria Beverly Hills','Hilton','Beverly Hills, CA','United States'],['Fairmont San Francisco','Fairmont','San Francisco, CA','United States'],
+ ['The Drake Chicago','Hilton','Chicago, IL','United States'],['Hilton Hawaiian Village','Hilton','Honolulu, HI','United States'],
+ ['Grand Hyatt Nashville','Hyatt','Nashville, TN','United States'],['The Roosevelt New Orleans','Hilton','New Orleans, LA','United States'],
+ ['The Savoy','Fairmont','London','United Kingdom'],['The Ritz London','Ritz-Carlton','London','United Kingdom'],
+ ['Claridge\u2019s','Maybourne','London','United Kingdom'],['The Langham London','Langham','London','United Kingdom'],
+ ['The Balmoral','Rocco Forte','Edinburgh','United Kingdom'],['Kimpton Blythswood Square','IHG','Glasgow','United Kingdom'],
+ ['Sandals Montego Bay','Sandals','Montego Bay','Jamaica'],['Sandals Negril','Sandals','Negril','Jamaica'],
+ ['Half Moon','Independent','Montego Bay','Jamaica'],['Hyatt Ziva Rose Hall','Hyatt','Montego Bay','Jamaica'],
+ ['Secrets Wild Orchid','Hyatt','Montego Bay','Jamaica'],['Couples Tower Isle','Couples','Ocho Rios','Jamaica'],
+ ['The Peninsula Shanghai','Peninsula','Shanghai','China'],['Waldorf Astoria Shanghai','Hilton','Shanghai','China'],
+ ['The Peninsula Beijing','Peninsula','Beijing','China'],['Waldorf Astoria Beijing','Hilton','Beijing','China'],
+ ['The Peninsula Hong Kong','Peninsula','Hong Kong','China'],['The Ritz-Carlton Hong Kong','Ritz-Carlton','Hong Kong','China'],
+ ['Mandarin Oriental Sanya','Mandarin Oriental','Sanya','China'],['Rosewood Guangzhou','Rosewood','Guangzhou','China'],
+ ['Atlantis The Palm','Independent','Dubai','United Arab Emirates'],['Burj Al Arab Jumeirah','Jumeirah','Dubai','United Arab Emirates'],
+ ['Jumeirah Beach Hotel','Jumeirah','Dubai','United Arab Emirates'],['Soneva Fushi','Soneva','Baa Atoll','Maldives'],
+ ['Conrad Maldives Rangali Island','Hilton','Rangali Island','Maldives'],['The Ritz-Carlton Paris','Ritz-Carlton','Paris','France'],
+ ['H\u00f4tel de Crillon','Rosewood','Paris','France'],['Fairmont Royal York','Fairmont','Toronto','Canada'],
+ ['Park Hyatt Sydney','Hyatt','Sydney','Australia'],['The Peninsula Tokyo','Peninsula','Tokyo','Japan'],
+ ['Four Seasons Resort Bali at Jimbaran Bay','Four Seasons','Bali','Indonesia'],['The Oberoi Mumbai','Oberoi','Mumbai','India']
+];
+</script>
+<script>
+/* ============ state & sync ============ */
+function uid(p){ return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+var S = null;            /* {members:[], hotels:[], posts:[]} */
+var me = null;           /* my member record */
+var view = 'feed', feedFilter = 'all', profileOf = null;
+var gateTab = 'join', pickedHotel = null, cmpType = 'post';
+var drafts = {};
+
+function esc(s){ return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function firstName(n){ return (n || '').split(' ')[0]; }
+function initials(n){ var p = (n || '?').trim().split(/\s+/); return (p[0][0] + (p[1] ? p[1][0] : '')).toUpperCase(); }
+function avColor(id){ var h = 0; for (var i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0; return AVCOLORS[h % AVCOLORS.length]; }
+function ago(ts){ var s = Math.max(1, (Date.now() - ts) / 1000 | 0); if (s < 60) return 'now'; var m = s / 60 | 0; if (m < 60) return m + 'm'; var h = m / 60 | 0; if (h < 24) return h + 'h'; var d = h / 24 | 0; if (d < 7) return d + 'd'; return new Date(ts).toLocaleDateString(); }
+function memberById(id){ return S ? S.members.filter(function(m){ return m.id === id; })[0] : null; }
+function hotelById(id){ return S ? S.hotels.filter(function(h){ return h.id === id; })[0] : null; }
+function myHotel(){ return me ? hotelById(me.hotelId) : null; }
+function statusBadge(m){ if (m.status === 'paused') return '<span class="badge pau">Left hospitality</span>'; if (m.status === 'between') return '<span class="badge bet">Between properties</span>'; return '<span class="badge act">In hospitality</span>'; }
+function ava(m, sm){ return '<div class="ava' + (sm ? ' sm' : '') + '" style="background:' + avColor(m.id) + '">' + esc(initials(m.name)) + '</div>'; }
+
+function seedState(){
+  var hotels = SEED_HOTELS.map(function(h, i){ return { id: 'seed' + i, name: h[0], brand: h[1], city: h[2], country: h[3], verified: true }; });
+  function H(n){ return hotels.filter(function(h){ return h.name === n; })[0].id; }
+  var t = Date.now();
+  var members = [
+    { id: 'demo-ana', name: 'Ana Rivas', pin: '1111', role: 'Housekeeping', hotelId: H('Hilton Orlando'), status: 'active', connections: ['demo-mateo', 'demo-daniel'], created: t - 86400000 * 40, u: t },
+    { id: 'demo-mateo', name: 'Mateo Kovacs', pin: '1111', role: 'Lifeguard & Recreation', hotelId: H('Atlantis The Palm'), status: 'active', connections: ['demo-ana'], created: t - 86400000 * 31, u: t },
+    { id: 'demo-daniel', name: 'Daniel Chen', pin: '1111', role: 'Management', hotelId: H('Fontainebleau Miami Beach'), status: 'active', connections: ['demo-ana'], created: t - 86400000 * 55, u: t },
+    { id: 'demo-priya', name: 'Priya Shah', pin: '1111', role: 'Concierge', hotelId: H('The Savoy'), status: 'active', connections: [], created: t - 86400000 * 22, u: t },
+    { id: 'demo-liwei', name: 'Li Wei', pin: '1111', role: 'Culinary / Kitchen', hotelId: H('The Peninsula Shanghai'), status: 'active', connections: [], created: t - 86400000 * 18, u: t },
+    { id: 'demo-shanice', name: 'Shanice Williams', pin: '1111', role: 'Front Desk', hotelId: H('Sandals Montego Bay'), status: 'between', connections: [], created: t - 86400000 * 12, u: t }
+  ];
+  var posts = [
+    { id: 'seed-p1', uid: 'demo-ana', type: 'shout', toUid: null, text: 'Shout-out to my whole PM crew — 214 rooms turned on a sold-out storm night. This team is unreal. 🏆', likes: ['demo-mateo', 'demo-daniel'], likesTs: t - 3600000 * 5, comments: [{ uid: 'demo-mateo', n: 'Mateo Kovacs', t: t - 3600000 * 4, text: 'Legends. All of you.' }], commentsTs: t - 3600000 * 4, interested: [], reports: [], ts: t - 3600000 * 6 },
+    { id: 'seed-p2', uid: 'demo-daniel', type: 'job', jobRole: 'Night Auditor', text: 'We are hiring a Night Auditor for the front office team. Great property, great crew — apply through me here.', likes: [], likesTs: 0, comments: [], commentsTs: 0, interested: ['demo-shanice'], reports: [], ts: t - 3600000 * 9 },
+    { id: 'seed-p3', uid: 'demo-priya', type: 'shout', toUid: 'demo-liwei', text: 'Li Wei quietly remade a guest\u2019s whole anniversary dinner after our kitchen lost power. Nobody asked him to. That is hospitality.', likes: ['demo-ana'], likesTs: t - 3600000 * 2, comments: [], commentsTs: 0, interested: [], reports: [], ts: t - 3600000 * 3 },
+    { id: 'seed-p4', uid: 'demo-mateo', type: 'post', text: 'Sunrise shift at the waterpark. Best office in the world. 🌅', likes: ['demo-ana', 'demo-priya'], likesTs: t - 3600000, comments: [], commentsTs: 0, interested: [], reports: [], ts: t - 3600000 * 2 }
+  ];
+  return { members: members, hotels: hotels, posts: posts };
+}
+
+async function sbGet(){
+  var h = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
+  var res = await fetch(SB_URL + '/rest/v1/app_records?id=eq.' + ROW + '&select=data', { headers: h });
+  if (!res.ok) throw new Error('read ' + res.status);
+  var rows = await res.json();
+  return (rows.length && rows[0].data) ? rows[0].data : null;
+}
+async function sbSet(data){
+  var h = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' };
+  var res = await fetch(SB_URL + '/rest/v1/app_records', { method: 'POST', headers: h, body: JSON.stringify([{ id: ROW, data: data }]) });
+  if (!res.ok) throw new Error('write ' + res.status);
+}
+function mergePost(lp, cp){
+  var out = (lp.ts >= cp.ts) ? lp : cp;
+  var likesTs = Math.max(lp.likesTs || 0, cp.likesTs || 0);
+  var cSrc = ((lp.commentsTs || 0) >= (cp.commentsTs || 0)) ? lp : cp;
+  out.likes = ((lp.likesTs || 0) >= (cp.likesTs || 0) ? lp : cp).likes || [];
+  out.likesTs = likesTs;
+  out.comments = cSrc.comments || []; out.commentsTs = Math.max(lp.commentsTs || 0, cp.commentsTs || 0);
+  var ints = {}; (lp.interested || []).concat(cp.interested || []).forEach(function(x){ ints[x] = 1; });
+  out.interested = Object.keys(ints);
+  var reps = {}; (lp.reports || []).concat(cp.reports || []).forEach(function(x){ reps[x] = 1; });
+  out.reports = Object.keys(reps);
+  return out;
+}
+function unionState(a, b){
+  if (!a) return b; if (!b) return a;
+  var out = { members: [], hotels: [], posts: [] }, i, m;
+  var mm = {}; a.members.forEach(function(x){ mm[x.id] = x; });
+  b.members.forEach(function(x){ if (!mm[x.id] || (x.u || 0) >= (mm[x.id].u || 0)) mm[x.id] = x; });
+  out.members = Object.keys(mm).map(function(k){ return mm[k]; });
+  var hh = {}; a.hotels.forEach(function(x){ hh[x.id] = x; });
+  b.hotels.forEach(function(x){ if (!hh[x.id]) hh[x.id] = x; });
+  out.hotels = Object.keys(hh).map(function(k){ return hh[k]; });
+  var pp = {}; a.posts.forEach(function(x){ pp[x.id] = x; });
+  b.posts.forEach(function(x){ pp[x.id] = pp[x.id] ? mergePost(pp[x.id], x) : x; });
+  out.posts = Object.keys(pp).map(function(k){ return pp[k]; }).sort(function(x, y){ return y.ts - x.ts; });
+  return out;
+}
+function saveCache(){ try { localStorage.setItem('hps-cache', JSON.stringify(S)); localStorage.setItem('hps-me', me ? me.id : ''); } catch (e) {} }
+function loadCache(){ try { var c = localStorage.getItem('hps-cache'); if (c) S = JSON.parse(c); } catch (e) {} }
+function setBadge(){ var b = document.getElementById('syncbadge'); if (navigator.onLine === false) { b.textContent = '● Offline — showing saved copy, will sync when you are back'; b.className = 'sync off'; } else { b.textContent = '● Synced with the HPSocial cloud'; b.className = 'sync'; } }
+async function pull(){
+  try {
+    var c = await sbGet();
+    if (c) { S = unionState(S, c); if (me) me = memberById(me.id) || me; saveCache(); render(); }
+    setBadge();
+  } catch (e) { var b = document.getElementById('syncbadge'); b.textContent = '● Offline — showing saved copy'; b.className = 'sync off'; }
+}
+async function push(){
+  try { var c = await sbGet(); if (c) S = unionState(S, c); await sbSet(S); saveCache(); setBadge(); if (me) me = memberById(me.id) || me; }
+  catch (e) { var b = document.getElementById('syncbadge'); b.textContent = '● Offline — saved on this device, will sync'; b.className = 'sync off'; }
+}
+
+/* ============ gate ============ */
+function allHotels(){ return S.hotels.slice().sort(function(a, b){ return a.name.localeCompare(b.name); }); }
+function hotelLine(h){ return '<div class="hn">' + esc(h.name) + '</div><div class="hm">' + esc(h.brand) + ' · ' + esc(h.city) + ' · ' + esc(h.country) + (h.verified ? '' : ' · awaiting verification') + '</div>'; }
+function renderGate(){
+  document.getElementById('whoami').innerHTML = '';
+  var h = '<div class="gate"><img class="mark" src="bell-mark.png"><h1><b>HPS</b>ocial</h1>'
+    + '<div class="sub">Hospitality Professionals Social</div>'
+    + '<div class="tag">Where Hospitality Connects.</div>'
+    + '<div class="card"><div class="tabs"><button id="tab-join" class="' + (gateTab === 'join' ? 'on' : '') + '" onclick="gateTab=\'join\';renderGate()">Join</button>'
+    + '<button id="tab-login" class="' + (gateTab === 'login' ? 'on' : '') + '" onclick="gateTab=\'login\';renderGate()">Log in</button></div>';
+  if (gateTab === 'join') {
+    h += '<label class="f">Your full name</label><input id="j-name" autocomplete="name" placeholder="e.g. Jordan Lee">'
+      + '<label class="f">Choose a PIN (4–6 numbers)</label><input id="j-pin" inputmode="numeric" type="password" maxlength="6" placeholder="••••">'
+      + '<label class="f">Your role</label><select id="j-role">' + ROLES.map(function(r){ return '<option>' + esc(r) + '</option>'; }).join('') + '</select>'
+      + '<label class="f">Find your hotel — every hotel, worldwide</label><div id="hotelpick"></div>'
+      + '<div id="gate-err"></div>'
+      + '<button class="bigbtn" onclick="doJoin()">Join HPSocial — I work in hospitality</button>'
+      + '<div class="hint">Membership is for people currently working in hospitality. Your property verifies your standing; if you leave the industry, your profile pauses until you are back.</div>';
+  } else {
+    h += '<label class="f">Your name</label><select id="l-name">' + S.members.slice().sort(function(a, b){ return a.name.localeCompare(b.name); }).map(function(m){ var hh = hotelById(m.hotelId); return '<option value="' + m.id + '">' + esc(m.name) + (hh ? ' — ' + esc(hh.name) : '') + '</option>'; }).join('') + '</select>'
+      + '<label class="f">Your PIN</label><input id="l-pin" inputmode="numeric" type="password" maxlength="6" placeholder="••••">'
+      + '<div id="gate-err"></div>'
+      + '<button class="bigbtn" onclick="doLogin()">Log in</button>'
+      + '<div class="hint">Demo profiles are open while HPSocial is young — PIN 1111 logs in as any of the starter members. Real verification arrives with property onboarding.</div>';
+  }
+  h += '</div></div>';
+  document.getElementById('main').innerHTML = h;
+  if (gateTab === 'join') renderHotelPick();
+}
+function renderHotelPick(){
+  var box = document.getElementById('hotelpick'); if (!box) return;
+  if (pickedHotel) {
+    var hh = hotelById(pickedHotel);
+    box.innerHTML = '<div class="hpicked"><button onclick="pickedHotel=null;renderHotelPick()">Change</button>' + esc(hh.name) + '<div class="hm">' + esc(hh.brand) + ' · ' + esc(hh.city) + ' · ' + esc(hh.country) + '</div></div>';
+    return;
+  }
+  box.innerHTML = '<input id="h-q" placeholder="Start typing your hotel, brand, or city…" oninput="hotelSearch(this.value)" autocomplete="off"><div class="hresults" id="h-res"></div>'
+    + '<div id="h-add"></div>';
+  var q = document.getElementById('h-q'); if (q) q.focus();
+}
+function hotelSearch(q){
+  var res = document.getElementById('h-res'), add = document.getElementById('h-add');
+  q = (q || '').trim().toLowerCase();
+  if (!q) { res.innerHTML = ''; add.innerHTML = ''; return; }
+  var hits = allHotels().filter(function(hh){ return (hh.name + ' ' + hh.brand + ' ' + hh.city + ' ' + hh.country).toLowerCase().indexOf(q) >= 0; }).slice(0, 14);
+  res.innerHTML = hits.map(function(hh){ return '<div onclick="pickHotel(\'' + hh.id + '\')">' + hotelLine(hh) + '</div>'; }).join('');
+  add.innerHTML = '<button class="ghostbtn" onclick="showAddHotel()">Can\u2019t find yours? Add your hotel</button>';
+}
+function pickHotel(id){ pickedHotel = id; renderHotelPick(); }
+function showAddHotel(){
+  document.getElementById('h-add').innerHTML = '<label class="f">Hotel name</label><input id="a-name" placeholder="Hotel name">'
+    + '<label class="f">Brand (or Independent)</label><input id="a-brand" placeholder="Brand">'
+    + '<label class="f">City</label><input id="a-city" placeholder="City">'
+    + '<label class="f">Country</label><input id="a-country" placeholder="Country">'
+    + '<button class="bigbtn" onclick="doAddHotel()">Add and select this hotel</button>';
+}
+async function doAddHotel(){
+  var n = document.getElementById('a-name').value.trim(), b = document.getElementById('a-brand').value.trim() || 'Independent',
+      c = document.getElementById('a-city').value.trim(), co = document.getElementById('a-country').value.trim();
+  if (!n || !c || !co) { document.getElementById('gate-err').innerHTML = '<div class="err">Hotel name, city, and country are needed.</div>'; return; }
+  var hh = { id: uid('h'), name: n, brand: b, city: c, country: co, verified: false };
+  S.hotels.push(hh); pickedHotel = hh.id; await push(); renderHotelPick();
+}
+function gateErr(msg){ document.getElementById('gate-err').innerHTML = '<div class="err">' + esc(msg) + '</div>'; }
+async function doJoin(){
+  var n = document.getElementById('j-name').value.trim(), pin = document.getElementById('j-pin').value.trim(), role = document.getElementById('j-role').value;
+  if (n.length < 2) return gateErr('Please enter your name.');
+  if (!/^\d{4,6}$/.test(pin)) return gateErr('PIN must be 4 to 6 numbers.');
+  if (!pickedHotel) return gateErr('Pick your hotel — that is what verifies you work in hospitality.');
+  if (S.members.some(function(m){ return m.name.toLowerCase() === n.toLowerCase(); })) return gateErr('That name is already a member — use Log in.');
+  var m = { id: uid('m'), name: n, pin: pin, role: role, hotelId: pickedHotel, status: 'active', connections: [], created: Date.now(), u: Date.now() };
+  S.members.push(m); me = m; await push(); saveCache(); render();
+}
+async function doLogin(){
+  var id = document.getElementById('l-name').value, pin = document.getElementById('l-pin').value.trim();
+  var m = memberById(id);
+  if (!m || m.pin !== pin) return gateErr('That PIN does not match — try again.');
+  me = m; saveCache(); render();
+}
+function doLogout(){ me = null; view = 'feed'; profileOf = null; saveCache(); render(); }
+</script>
+<script>
+/* ============ app views ============ */
+function whoami(){
+  var el = document.getElementById('whoami');
+  if (!me) { el.innerHTML = ''; return; }
+  var hh = myHotel();
+  el.innerHTML = '<b>' + esc(me.name) + '</b><br>' + (hh ? esc(hh.name) : '') + ' · <a href="#" style="color:#f3d27a" onclick="doLogout();return false;">Log out</a>';
+}
+function tabbar(){
+  var tabs = [['feed', '🏠', 'Feed'], ['people', '👥', 'People'], ['jobs', '💼', 'Jobs'], ['profile', '👤', 'Profile']];
+  return '<div class="tabbar">' + tabs.map(function(t){ return '<button class="' + (view === t[0] ? 'on' : '') + '" onclick="go(\'' + t[0] + '\')"><span class="ic">' + t[1] + '</span>' + t[2] + '</button>'; }).join('') + '</div>';
+}
+function go(v){ view = v; profileOf = null; render(); window.scrollTo(0, 0); }
+function shoutCountFor(id){ return S.posts.filter(function(p){ return p.type === 'shout' && p.toUid === id && !(p.reports && p.reports.length >= 2); }).length; }
+function postVisible(p){ return !(p.reports && p.reports.length >= 2) || (me && p.uid === me.id); }
+
+function postCard(p){
+  var a = memberById(p.uid); if (!a) return '';
+  var hh = hotelById(a.hotelId);
+  var liked = me && p.likes && p.likes.indexOf(me.id) >= 0;
+  var likers = (p.likes || []).map(function(id){ var m = memberById(id); return m ? firstName(m.name) : ''; }).filter(Boolean);
+  var h = '<div class="post2' + (p.type === 'shout' ? ' shout' : '') + (p.type === 'job' ? ' jobp' : '') + '" id="post-' + p.id + '">';
+  h += '<div class="pwho">' + ava(a) + '<div><div class="pnm">' + esc(a.name) + ' ' + (a.id === (me && me.id) ? '<span style="color:#8496ab;font-size:12px">(you)</span>' : '') + '</div>'
+    + '<div class="pmeta">' + esc(a.role) + ' · ' + (hh ? esc(hh.name) + ', ' + esc(hh.city) : '') + ' · ' + ago(p.ts) + '</div></div>'
+    + (a.pausedNote ? '' : '')
+    + (me && p.uid === me.id ? '<button class="pdel" title="Delete post" onclick="delPost(\'' + p.id + '\')">✕</button>' : '') + '</div>';
+  if (p.type === 'shout') {
+    var to = p.toUid ? memberById(p.toUid) : null;
+    h += '<div class="shoutto">🏆 Shout-out' + (to ? ' to <a href="#" style="color:#7a5b12" onclick="openProfile(\'' + to.id + '\');return false;">' + esc(to.name) + '</a>' : ' to the crew') + '</div>';
+  }
+  if (p.type === 'job') {
+    h += '<span class="jobtag">💼 Hiring</span><div class="jobrole">' + esc(p.jobRole || 'Team member') + ' — ' + (hh ? esc(hh.name) : '') + '</div>';
+  }
+  h += '<div class="ptxt">' + esc(p.text) + '</div>';
+  if (likers.length) h += '<div class="likenames">👍 ' + esc(likers.slice(0, 6).join(', ')) + (likers.length > 6 ? ' +' + (likers.length - 6) : '') + '</div>';
+  h += '<div class="pbar"><button class="' + (liked ? 'liked' : '') + '" onclick="toggleLike(\'' + p.id + '\')">👍 ' + (p.likes ? p.likes.length : 0) + (liked ? ' · Liked' : ' · Like') + '</button>'
+    + '<button onclick="focusComment(\'' + p.id + '\')">💬 ' + (p.comments ? p.comments.length : 0) + ' comments</button>';
+  if (p.type === 'job') {
+    var on = me && (p.interested || []).indexOf(me.id) >= 0;
+    h += (me && p.uid === me.id) ? '<span style="margin-left:auto">' + (p.interested || []).length + ' interested</span>' : '<button class="intbtn' + (on ? ' on' : '') + '" onclick="toggleInterest(\'' + p.id + '\')">' + (on ? '✓ Interested' : 'I\u2019m interested') + '</button>';
+  } else if (me && p.uid !== me.id) {
+    h += '<button class="rep" onclick="reportPost(\'' + p.id + '\')">🚩 Report</button>';
+  }
+  h += '</div>';
+  if (p.reports && p.reports.length >= 2) h += '<div style="color:#b3261e;font-size:12.5px;font-weight:700;margin-top:7px">This post is under review after reports.</div>';
+  /* comments */
+  h += '<div class="cmts">';
+  (p.comments || []).forEach(function(c, ci){
+    var cm = memberById(c.uid);
+    h += '<div class="cmt">' + (cm ? ava(cm, true) : '<div class="ava sm" style="background:#8496ab">?</div>') + '<div class="cb"><b>' + esc(c.n) + '</b> <span class="cw">' + ago(c.t) + '</span><br>' + esc(c.text) + '</div>'
+      + (me && c.uid === me.id ? '<button class="cdel" title="Delete comment" onclick="delComment(\'' + p.id + '\',' + ci + ')">✕</button>' : '') + '</div>';
+  });
+  var d = drafts['c-' + p.id] || '';
+  h += '<div class="cbox"><input id="cin-' + p.id + '" placeholder="Write a comment…" value="' + esc(d) + '" oninput="drafts[\'c-' + p.id + '\']=this.value" onkeydown="if(event.key===\'Enter\')addComment(\'' + p.id + '\')"><button onclick="addComment(\'' + p.id + '\')">Post</button></div>';
+  h += '</div></div>';
+  return h;
+}
+function feedPosts(){
+  var list = S.posts.filter(postVisible);
+  if (feedFilter === 'mine' && me) list = list.filter(function(p){ var a = memberById(p.uid); return a && a.hotelId === me.hotelId; });
+  if (feedFilter === 'shouts') list = list.filter(function(p){ return p.type === 'shout'; });
+  if (feedFilter === 'jobs') list = list.filter(function(p){ return p.type === 'job'; });
+  if (feedFilter === 'near' && me) { var mh = myHotel(); if (mh) list = list.filter(function(p){ var a = memberById(p.uid); var hh = a ? hotelById(a.hotelId) : null; return hh && hh.country === mh.country; }); }
+  return list.sort(function(a, b){ return b.ts - a.ts; });
+}
+function renderFeed(){
+  var h = '<div class="view">';
+  if (me.status === 'between') h += '<div class="post2" style="border:1.5px solid #c9a227;background:#fdf6e0"><b>Between properties?</b> Your profile shows it honestly — and the Jobs board below is fully open to you. When you land, pick your new hotel on your profile and you are verified again.</div>';
+  h += '<div class="composer"><div class="chips">'
+    + '<button class="' + (cmpType === 'post' ? 'on' : '') + '" onclick="cmpType=\'post\';render()">✏️ Post</button>'
+    + '<button class="' + (cmpType === 'shout' ? 'on gold' : '') + '" onclick="cmpType=\'shout\';render()">🏆 Shout-out</button>'
+    + '<button class="' + (cmpType === 'job' ? 'on' : '') + '" onclick="cmpType=\'job\';render()">💼 Job</button></div>'
+    + '<textarea id="cmp-text" oninput="drafts.cmp=this.value" placeholder="' + (cmpType === 'shout' ? 'Who went above and beyond?' : cmpType === 'job' ? 'Describe the opening…' : 'Share with the floor…') + '">' + esc(drafts.cmp || '') + '</textarea>';
+  if (cmpType === 'shout') {
+    h += '<div class="crow"><select id="cmp-to"><option value="">To: my whole crew</option>' + S.members.filter(function(m){ return me && m.id !== me.id && m.status !== 'paused'; }).map(function(m){ return '<option value="' + m.id + '">To: ' + esc(m.name) + '</option>'; }).join('') + '</select></div>';
+  }
+  if (cmpType === 'job') {
+    h += '<div class="crow"><select id="cmp-role">' + ROLES.map(function(r){ return '<option>' + esc(r) + '</option>'; }).join('') + '</select></div>';
+  }
+  h += '<div class="crow"><button class="post" style="flex:1;padding:12px" onclick="doPost()">Share</button></div></div>';
+  h += '<div class="filters">'
+    + [['all', '🌍 Everyone'], ['mine', '🏨 My property'], ['near', '📍 My country'], ['shouts', '🏆 Shout-outs'], ['jobs', '💼 Jobs']].map(function(f){ return '<button class="' + (feedFilter === f[0] ? 'on' : '') + '" onclick="feedFilter=\'' + f[0] + '\';render()">' + f[1] + '</button>'; }).join('') + '</div>';
+  var list = feedPosts();
+  h += list.length ? list.map(postCard).join('') : '<div class="empty">Nothing here yet — be the first to post.</div>';
+  h += '<div class="foot">HPSocial · Hospitality only · Power by: NDL systems tech</div></div>';
+  return h;
+}
+function renderPeople(){
+  var h = '<div class="view"><div class="secttl" style="margin-top:2px">👥 Hospitality people</div>';
+  var ms = S.members.slice().sort(function(a, b){ return (a.status === 'paused') - (b.status === 'paused') || a.name.localeCompare(b.name); });
+  h += ms.map(function(m){
+    var hh = hotelById(m.hotelId);
+    var conn = me && me.connections.indexOf(m.id) >= 0;
+    return '<div class="member' + (m.status === 'paused' ? ' paused' : '') + '" onclick="openProfile(\'' + m.id + '\')">' + ava(m)
+      + '<div><div class="pnm" style="font-size:15.5px">' + esc(m.name) + (me && m.id === me.id ? ' <span style="color:#8496ab;font-size:12px">(you)</span>' : '') + '</div>'
+      + '<div class="pmeta">' + esc(m.role) + ' · ' + (hh ? esc(hh.name) + ', ' + esc(hh.city) : '') + '</div>' + statusBadge(m) + '</div>'
+      + (me && m.id !== me.id ? '<button class="connbtn' + (conn ? ' on' : '') + '" onclick="event.stopPropagation();toggleConnect(\'' + m.id + '\')">' + (conn ? '✓ Connected' : 'Connect') + '</button>' : '') + '</div>';
+  }).join('');
+  h += '<div class="foot">Tap a person to see their profile and shout-outs.</div></div>';
+  return h;
+}
+function renderJobs(){
+  var jobs = S.posts.filter(function(p){ return p.type === 'job' && postVisible(p); }).sort(function(a, b){ return b.ts - a.ts; });
+  return '<div class="view"><div class="secttl" style="margin-top:2px">💼 Openings across hospitality</div>'
+    + (jobs.length ? jobs.map(postCard).join('') : '<div class="empty">No openings posted yet. Know one? Post it from the Feed with the 💼 Job button.</div>')
+    + '<div class="foot">Posted by hospitality people, for hospitality people.</div></div>';
+}
+function openProfile(id){ profileOf = id; render(); window.scrollTo(0, 0); }
+function renderProfile(){
+  var m = profileOf ? memberById(profileOf) : me;
+  if (!m) return '<div class="view"><div class="empty">Profile not found.</div></div>';
+  var hh = hotelById(m.hotelId);
+  var mine = me && m.id === me.id;
+  var conn = me && !mine && me.connections.indexOf(m.id) >= 0;
+  var h = '<div class="view"><div class="cover"></div><div class="profcard">' + '<div class="bigava" style="background:' + avColor(m.id) + '">' + esc(initials(m.name)) + '</div>'
+    + '<div class="profname">' + esc(m.name) + '</div>'
+    + '<div class="pmeta" style="font-size:13.5px">' + esc(m.role) + ' · ' + (hh ? esc(hh.name) + ' · ' + esc(hh.city) + ', ' + esc(hh.country) : '') + '</div>'
+    + '<div style="margin-top:7px">' + statusBadge(m) + '</div>'
+    + '<div class="stats"><div><b>' + m.connections.length + '</b><span>Connections</span></div><div><b>' + shoutCountFor(m.id) + '</b><span>Shout-outs</span></div><div><b>' + Math.max(0, Math.round((Date.now() - (m.created || Date.now())) / 86400000 / 30)) + '</b><span>Months in</span></div></div>'
+    + (!mine && me ? '<button class="connbtn' + (conn ? ' on' : '') + '" style="width:100%;margin:13px 0 2px" onclick="toggleConnect(\'' + m.id + '\')">' + (conn ? '✓ Connected' : 'Connect') + '</button>' : '')
+    + '</div>';
+  var shouts = S.posts.filter(function(p){ return p.type === 'shout' && p.toUid === m.id && postVisible(p); }).sort(function(a, b){ return b.ts - a.ts; });
+  h += '<div class="secttl">🏆 Shout-outs received</div>';
+  h += shouts.length ? shouts.map(postCard).join('') : '<div class="empty" style="padding:18px">No shout-outs yet.</div>';
+  var theirs = S.posts.filter(function(p){ return p.uid === m.id && p.type !== 'shout' && postVisible(p); }).sort(function(a, b){ return b.ts - a.ts; });
+  h += '<div class="secttl">✏️ Posts</div>';
+  h += theirs.length ? theirs.map(postCard).join('') : '<div class="empty" style="padding:18px">Nothing posted yet.</div>';
+  if (mine) {
+    h += '<div class="secttl">⚙️ My membership</div><div class="card" style="margin-top:6px">'
+      + '<div style="font-size:14.5px;line-height:1.55;color:#29425e">HPSocial is for people <b>currently working in hospitality</b>. If your situation changes, set it here — your profile and shout-outs are kept safe while you are away.</div>';
+    if (m.status === 'active') h += '<button class="ghostbtn" onclick="setStatus(\'between\')">I\u2019m between properties right now</button><button class="ghostbtn" onclick="setStatus(\'paused\')">I left hospitality</button>';
+    if (m.status === 'between') h += '<button class="bigbtn" onclick="backToWork()">I\u2019m back — pick my new hotel</button>';
+    h += '<button class="ghostbtn" onclick="doLogout()">Log out</button></div>';
+  }
+  h += '<div class="foot">Your reputation travels with you.</div></div>';
+  return h;
+}
+function renderPaused(){
+  return '<div class="view"><div class="pausedbox"><div style="font-size:44px">🔔</div><h2>Your profile is paused</h2>'
+    + '<p>You told HPSocial you left hospitality, so your account is resting — exactly how membership works here. Your connections, shout-outs, and history are all kept, untouched. The moment you are back in hospitality, pick your hotel and everything wakes up.</p>'
+    + '<button class="bigbtn" onclick="backToWork()">I\u2019m back in hospitality</button>'
+    + '<button class="ghostbtn" style="background:transparent;color:#aebfd2;border-color:#3d5a78" onclick="doLogout()">Log out</button></div></div>';
+}
+function backToWork(){
+  /* return to the gate's hotel picker as a re-verification step */
+  view = 'return'; render();
+}
+function renderReturn(){
+  var h = '<div class="view"><div class="card" style="margin-top:4px"><div class="secttl" style="margin-top:0">Welcome back 🎉</div>'
+    + '<div style="font-size:15px;line-height:1.55;color:#29425e">Pick the hotel where you work now, and your profile reactivates — connections, shout-outs, and all.</div>'
+    + '<label class="f">Find your hotel</label><div id="hotelpick"></div>'
+    + '<button class="bigbtn" onclick="doReturn()">Reactivate my profile</button></div></div>';
+  setTimeout(function(){ pickedHotel = pickedHotel || me.hotelId; renderHotelPick(); }, 0);
+  return h;
+}
+async function doReturn(){
+  if (!pickedHotel) { alert('Pick your hotel first.'); return; }
+  me.hotelId = pickedHotel; me.status = 'active'; me.u = Date.now(); await push(); view = 'feed'; render();
+}
+async function setStatus(st){
+  var msg = st === 'paused' ? 'Pause your profile? You will not be able to use HPSocial until you are back in hospitality.' : 'Show \u201cBetween properties\u201d on your profile? You keep full access, including Jobs.';
+  if (!confirm(msg)) return;
+  me.status = st; me.u = Date.now(); await push(); render();
+}
+
+/* ============ actions ============ */
+function saveDrafts(){ var t = document.getElementById('cmp-text'); if (t) drafts.cmp = t.value; }
+async function doPost(){
+  var t = document.getElementById('cmp-text'); var text = t ? t.value.trim() : '';
+  if (!text) { alert('Write something first.'); return; }
+  var p = { id: uid('p'), uid: me.id, type: cmpType, text: text, likes: [], likesTs: 0, comments: [], commentsTs: 0, interested: [], reports: [], ts: Date.now() };
+  if (cmpType === 'shout') { var s = document.getElementById('cmp-to'); p.toUid = s && s.value ? s.value : null; }
+  if (cmpType === 'job') { var r = document.getElementById('cmp-role'); p.jobRole = r ? r.value : 'Team member'; view = 'feed'; feedFilter = 'jobs'; }
+  S.posts.unshift(p); drafts.cmp = ''; await push(); render();
+}
+async function toggleLike(id){
+  var p = S.posts.filter(function(x){ return x.id === id; })[0]; if (!p) return;
+  p.likes = p.likes || [];
+  var i = p.likes.indexOf(me.id);
+  if (i >= 0) p.likes.splice(i, 1); else p.likes.push(me.id);
+  p.likesTs = Date.now(); saveCache();
+  var card = document.getElementById('post-' + id);
+  if (card) { var a = memberById(p.uid); }
+  await push(); render();
+}
+async function toggleInterest(id){
+  var p = S.posts.filter(function(x){ return x.id === id; })[0]; if (!p) return;
+  p.interested = p.interested || [];
+  var i = p.interested.indexOf(me.id);
+  if (i >= 0) p.interested.splice(i, 1); else p.interested.push(me.id);
+  await push(); render();
+}
+function focusComment(id){ var i = document.getElementById('cin-' + id); if (i) { i.focus(); i.scrollIntoView({ block: 'center', behavior: 'smooth' }); } }
+async function addComment(id){
+  var inp = document.getElementById('cin-' + id); var text = inp ? inp.value.trim() : '';
+  if (!text) return;
+  var p = S.posts.filter(function(x){ return x.id === id; })[0]; if (!p) return;
+  p.comments = p.comments || [];
+  p.comments.push({ uid: me.id, n: me.name, t: Date.now(), text: text }); p.commentsTs = Date.now();
+  drafts['c-' + id] = ''; await push(); render();
+  var c = document.getElementById('post-' + id); if (c) c.scrollIntoView({ block: 'center' });
+}
+async function delComment(pid, ci){
+  var p = S.posts.filter(function(x){ return x.id === pid; })[0]; if (!p || !confirm('Delete this comment?')) return;
+  p.comments.splice(ci, 1); p.commentsTs = Date.now(); await push(); render();
+}
+async function delPost(id){
+  if (!confirm('Delete this post?')) return;
+  S.posts = S.posts.filter(function(x){ return x.id !== id; }); await push(); render();
+}
+async function reportPost(id){
+  var p = S.posts.filter(function(x){ return x.id === id; })[0]; if (!p) return;
+  if (!confirm('Report this post to the HPSocial moderators?')) return;
+  p.reports = p.reports || []; if (p.reports.indexOf(me.id) < 0) p.reports.push(me.id);
+  await push(); render(); alert('Reported — thank you. Our moderators will take a look.');
+}
+async function toggleConnect(id){
+  var other = memberById(id); if (!other) return;
+  var i = me.connections.indexOf(id);
+  if (i >= 0) { me.connections.splice(i, 1); var j = other.connections.indexOf(me.id); if (j >= 0) other.connections.splice(j, 1); }
+  else { me.connections.push(id); if (other.connections.indexOf(me.id) < 0) other.connections.push(me.id); }
+  me.u = Date.now(); other.u = Date.now(); await push(); render();
+}
+
+/* ============ render & boot ============ */
+function render(){
+  whoami();
+  if (!S) { document.getElementById('main').innerHTML = '<div class="empty">Loading HPSocial…</div>'; return; }
+  if (!me) { renderGate(); return; }
+  if (view === 'return') { document.getElementById('main').innerHTML = renderReturn() + tabbar(); return; }
+  if (me.status === 'paused') { document.getElementById('main').innerHTML = renderPaused() + tabbar(); return; }
+  var h = '';
+  if (profileOf || view === 'profile') h = renderProfile();
+  else if (view === 'people') h = renderPeople();
+  else if (view === 'jobs') h = renderJobs();
+  else h = renderFeed();
+  document.getElementById('main').innerHTML = h + tabbar();
+}
+window.hpsRender = render;
+setInterval(function(){ if (me && document.visibilityState === 'visible') pull(); }, 30000);
+document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible' && me) pull(); });
+(async function boot(){
+  loadCache();
+  var savedMe = null;
+  try { savedMe = localStorage.getItem('hps-me'); } catch (e) {}
+  if (S && savedMe) me = memberById(savedMe);
+  render();
+  try {
+    var c = await sbGet();
+    if (c) S = unionState(S, c);
+    else { if (!S) S = seedState(); await sbSet(S); }
+    if (savedMe) me = memberById(savedMe) || me;
+    saveCache(); setBadge(); render();
+  } catch (e) {
+    if (!S) S = seedState();
+    if (savedMe) me = memberById(savedMe) || me;
+    saveCache();
+    var b = document.getElementById('syncbadge'); b.textContent = '● Offline — showing saved copy'; b.className = 'sync off';
+    render();
+  }
+})();
+</script>
+<script>
+if('serviceWorker' in navigator){ window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+</script>
+</body>
+</html>
