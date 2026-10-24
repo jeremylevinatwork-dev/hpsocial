@@ -81,6 +81,8 @@
   .pbar .rep { margin-left:auto; font-size:12px; color:#a8b8c8; }
   .intbtn { margin-left:auto; border:0; background:#0d2138; color:#fff; border-radius:9px; padding:7px 14px; font-weight:800; font-size:13px; cursor:pointer; }
   .intbtn.on { background:#2e7d32; }
+  .applybtn { display:block; width:100%; margin:10px 0 2px; border:0; background:#0f2c4c; color:#fff; border-radius:10px; padding:11px; font-weight:800; font-size:14.5px; cursor:pointer; font-family:inherit; }
+  .applybtn.done { background:#2e7d32; }
   .likenames { font-size:12px; color:#a8842a; font-weight:700; margin-top:6px; }
   .cmts { margin-top:9px; }
   .cmt { display:flex; gap:8px; margin-top:8px; font-size:14px; line-height:1.45; }
@@ -376,6 +378,8 @@ function mergePost(lp, cp){
   out.comments = cSrc.comments || []; out.commentsTs = Math.max(lp.commentsTs || 0, cp.commentsTs || 0);
   var ints = {}; (lp.interested || []).concat(cp.interested || []).forEach(function(x){ ints[x] = 1; });
   out.interested = Object.keys(ints);
+  var aps = {}; (lp.apps || []).concat(cp.apps || []).forEach(function(x){ aps[x] = 1; });
+  out.apps = Object.keys(aps);
   var reps = {}; (lp.reports || []).concat(cp.reports || []).forEach(function(x){ reps[x] = 1; });
   out.reports = Object.keys(reps);
   return out;
@@ -636,13 +640,14 @@ function postCard(p){
     var jloc = p.loc || jobLocText(p); var jd = jobDist(p);
     if (jloc || jd != null) h += '<div class="pmeta" style="margin-top:2px">\uD83D\uDCCD ' + esc(jloc || '') + (jd != null ? ' \u00B7 <b style="color:#177245">~' + Math.max(1, Math.round(jd)) + ' mi away</b>' : '') + '</div>';
   }
-  h += '<div class="ptxt">' + esc(p.text) + '</div>';
+  if (p.type === 'job' && me && p.uid !== me.id) { var apd = (p.apps || []).indexOf(me.id) >= 0; h += '<button class="applybtn' + (apd ? ' done' : '') + '" onclick="applyJob(\'' + p.id + '\')">' + (apd ? '\u2713 Applied \u00B7 open the posting again' : '\uD83D\uDCE9 Apply for this job') + '</button>'; }
+  h += '<div class="ptxt">' + linkify(esc(p.text)) + '</div>';
   if (likers.length) h += '<div class="likenames">👍 ' + esc(likers.slice(0, 6).join(', ')) + (likers.length > 6 ? ' +' + (likers.length - 6) : '') + '</div>';
   h += '<div class="pbar"><button class="' + (liked ? 'liked' : '') + '" onclick="toggleLike(\'' + p.id + '\')">👍 ' + (p.likes ? p.likes.length : 0) + (liked ? ' · Liked' : ' · Like') + '</button>'
     + '<button onclick="focusComment(\'' + p.id + '\')">💬 ' + (p.comments ? p.comments.length : 0) + ' comments</button>';
   if (p.type === 'job') {
     var on = me && (p.interested || []).indexOf(me.id) >= 0;
-    h += (me && p.uid === me.id) ? '<span style="margin-left:auto">' + (p.interested || []).length + ' interested</span>' : '<button class="intbtn' + (on ? ' on' : '') + '" onclick="toggleInterest(\'' + p.id + '\')">' + (on ? '✓ Interested' : 'I\u2019m interested') + '</button>';
+    h += (me && p.uid === me.id) ? '<span style="margin-left:auto">' + (p.interested || []).length + ' interested \u00B7 ' + (p.apps || []).length + ' applied</span>' : '<button class="intbtn' + (on ? ' on' : '') + '" onclick="toggleInterest(\'' + p.id + '\')">' + (on ? '✓ Interested' : 'I\u2019m interested') + '</button>';
   } else if (me && p.uid !== me.id) {
     h += '<button class="rep" onclick="reportPost(\'' + p.id + '\')">🚩 Report</button>';
   }
@@ -652,7 +657,7 @@ function postCard(p){
   h += '<div class="cmts">';
   (p.comments || []).forEach(function(c, ci){
     var cm = memberById(c.uid);
-    h += '<div class="cmt">' + (cm ? ava(cm, true) : '<div class="ava sm" style="background:#8496ab">?</div>') + '<div class="cb"><b>' + esc(c.n) + '</b> <span class="cw">' + ago(c.t) + '</span><br>' + esc(c.text) + '</div>'
+    h += '<div class="cmt">' + (cm ? ava(cm, true) : '<div class="ava sm" style="background:#8496ab">?</div>') + '<div class="cb"><b>' + esc(c.n) + '</b> <span class="cw">' + ago(c.t) + '</span><br>' + linkify(esc(c.text)) + '</div>'
       + (me && c.uid === me.id ? '<button class="cdel" title="Delete comment" onclick="delComment(\'' + p.id + '\',' + ci + ')">✕</button>' : '') + '</div>';
   });
   var d = drafts['c-' + p.id] || '';
@@ -704,6 +709,26 @@ function renderPeople(){
   }).join('');
   h += '<div class="foot">Tap a person to see their profile and shout-outs.</div></div>';
   return h;
+}
+/* ===== Apply: employer link + record + notify the poster ===== */
+function linkify(t){ return t.replace(/(https?:\/\/[^\s<]+)/g, function(u){ return '<a href="' + u + '" target="_blank" rel="noopener" style="color:#0f4c81;font-weight:700;text-decoration:underline;word-break:break-all">' + u + '</a>'; }); }
+function applyUrl(p){ var m = (p.text || '').match(/https?:\/\/[^\s]+/); return m ? m[0] : ''; }
+async function applyJob(id){
+  var p = null; S.posts.forEach(function(x){ if (x.id === id) p = x; }); if (!p || !me) return;
+  var url = applyUrl(p);
+  if (url) window.open(url, '_blank');
+  if ((p.apps || []).indexOf(me.id) >= 0) return;
+  p.apps = p.apps || []; p.apps.push(me.id);
+  if (p.uid !== 'mHPSJobs'){
+    var hh = myHotel();
+    var lines = ['\uD83D\uDCE9 I just applied for your opening: ' + (p.jobRole || 'Team member'), me.name + ' \u2014 ' + me.role + (hh ? ' at ' + hh.name : '')];
+    if (me.headline) lines.push(me.headline);
+    var exs = me.exp || []; if (exs.length) lines.push('Experience: ' + exs[0].role + (exs[0].hotel ? ' at ' + exs[0].hotel : '') + (exs.length > 1 ? ' (+' + (exs.length - 1) + ' more)' : ''));
+    var sk = (me.skills || []).slice(0, 6); if (sk.length) lines.push('Skills: ' + sk.join(', '));
+    lines.push('My full profile is on HPSocial \u2014 happy to talk!');
+    S.msgs.push({ id: uid('m'), from: me.id, to: p.uid, text: lines.join('\n'), ts: Date.now(), seen: false });
+  }
+  await push(); saveCache(); render();
 }
 /* ---- Jobs pinpoint (device-local only: your location is never uploaded) ---- */
 var pin = null; try { pin = JSON.parse(localStorage.getItem('hps-pin') || 'null'); } catch (e) { pin = null; }
@@ -766,6 +791,7 @@ function renderJobs(){
   var owStrip = ow.length ? '<div class="card" style="margin-top:6px"><div style="font-weight:800;color:#0f2c4c">🟢 Open to work — ' + ow.length + ' member' + (ow.length > 1 ? 's' : '') + '</div><div style="font-size:14px;line-height:1.7;margin-top:3px">' + ow.map(function(x){ return '<a href="#" onclick="openProfile(\'' + x.id + '\');return false" style="color:#177245;font-weight:700;text-decoration:none">' + esc(x.name) + '</a>'; }).join(' · ') + '</div></div>' : '';
   return '<div class="view"><div class="secttl" style="margin-top:2px">💼 Openings across hospitality</div>'
     + pinBar()
+    + (function(){ var n = S.posts.filter(function(p){ return p.type === 'job' && me && (p.apps || []).indexOf(me.id) >= 0; }).length; return n ? '<div class="card" style="margin-top:6px;color:#177245;font-weight:800">\u2713 You have applied to ' + n + ' job' + (n === 1 ? '' : 's') + ' \u2014 good luck!</div>' : ''; })()
     + owStrip
     + (jobs.length ? jobs.map(postCard).join('') : '<div class="empty">' + (pin && pinRadius ? 'No openings within ' + pinRadius + ' miles of ' + esc(pin.label) + ' yet \u2014 try Any distance.' : 'No openings posted yet. Know one? Post it from the Feed with the 💼 Job button.') + '</div>')
     + '<div class="foot">Posted by hospitality people, for hospitality people.</div></div>';
@@ -943,7 +969,7 @@ function saveDrafts(){ var t = document.getElementById('cmp-text'); if (t) draft
 async function doPost(){
   var t = document.getElementById('cmp-text'); var text = t ? t.value.trim() : '';
   if (!text) { alert('Write something first.'); return; }
-  var p = { id: uid('p'), uid: me.id, type: cmpType, text: text, likes: [], likesTs: 0, comments: [], commentsTs: 0, interested: [], reports: [], ts: Date.now() };
+  var p = { id: uid('p'), uid: me.id, type: cmpType, text: text, likes: [], likesTs: 0, comments: [], commentsTs: 0, interested: [], reports: [], apps: [], ts: Date.now() };
   if (cmpType === 'shout') { var s = document.getElementById('cmp-to'); p.toUid = s && s.value ? s.value : null; }
   if (cmpType === 'job') { var r = document.getElementById('cmp-role'); p.jobRole = r ? r.value : 'Team member'; var le = document.getElementById('cmp-loc'); p.loc = le ? le.value.trim() : ''; if (p.loc) { var gc0 = geoCacheGet(p.loc); if (gc0) { p.lat = gc0.lat; p.lng = gc0.lng; } else { geocodeCity(p.loc).then(function(g){ if (g) { p.lat = g.lat; p.lng = g.lng; push(); } }); } } drafts.cmpLoc = ''; view = 'feed'; feedFilter = 'jobs'; }
   S.posts.unshift(p); drafts.cmp = ''; await push(); render();
