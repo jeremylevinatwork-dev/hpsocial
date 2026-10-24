@@ -144,7 +144,7 @@ async function adminLogin(){
 function adminLogout(){ adminAuthed = false; S = null; ['btn-refresh', 'btn-open', 'btn-out'].forEach(function(id){ document.getElementById(id).style.display = 'none'; }); renderGate(''); }
 
 /* ============ shared bits ============ */
-function statusBadge(m){ if (m.status === 'paused') return '<span class="badge b-pau">Left hospitality (paused)</span>'; if (m.status === 'between') return '<span class="badge b-bet">Between properties</span>'; return '<span class="badge b-act">In hospitality</span>'; }
+function statusBadge(m){ if (m.status === 'blocked') return '<span class="badge b-pau">🚫 Blocked</span>'; if (m.status === 'paused') return '<span class="badge b-pau">Left hospitality (paused)</span>'; if (m.status === 'between') return '<span class="badge b-bet">Between properties</span>'; return '<span class="badge b-act">In hospitality</span>'; }
 function confBadge(m){ return m.selfie ? '<span class="badge b-conf">✓ Confirmed</span>' : '<span class="badge b-nc">Not confirmed</span>'; }
 function ava(m){ return m.pic ? '<div class="ava"><img src="' + m.pic + '" alt=""></div>' : '<div class="ava" style="background:' + avColor(m.id) + '">' + esc(initials(m.name)) + '</div>'; }
 function postHead(p){
@@ -202,6 +202,49 @@ async function removeMember(mid){
     toast(m.name + ' removed');
   } catch (e) { toast('Save failed — try again'); }
 }
+async function toggleBlock(mid){
+  var m = memberById(mid); if (!m) return;
+  var toBlock = m.status !== 'blocked';
+  if (toBlock && !confirm('BLOCK ' + m.name + '?\n\nThey are locked out immediately and — unlike a pause — they CANNOT restore the account themselves. Only you can unblock. Their posts stay up unless you remove them.')) return;
+  try { await mutate(function(s){ var x = s.members.filter(function(y){ return y.id === mid; })[0]; if (x) { x.status = toBlock ? 'blocked' : 'active'; x.u = Date.now(); } }); toast(toBlock ? m.name + ' blocked' : m.name + ' unblocked'); }
+  catch (e) { toast('Save failed — try again'); }
+}
+function toggleFix(mid){ var el = document.getElementById('fix-' + mid); if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
+function fixEditor(m){
+  var opts = '<option value="">— No hotel —</option>' + (S.hotels || []).map(function(x){ return '<option value="' + x.id + '"' + (m.hotelId === x.id ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('');
+  var sts = [['active', 'In hospitality'], ['between', 'Between properties'], ['paused', 'Left hospitality (paused)'], ['blocked', 'Blocked']].map(function(o){ return '<option value="' + o[0] + '"' + (m.status === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('');
+  return '<div id="fix-' + m.id + '" style="display:none;background:#f4f7fb;border:1.5px solid #dde5ee;border-radius:11px;padding:12px;margin-top:10px">'
+    + '<div style="font-weight:800;color:#0f2c4c;font-size:13.5px;margin-bottom:8px">✏️ Fix this profile</div>'
+    + '<label class="f" style="margin-top:4px">Name</label><input type="text" id="fx-name-' + m.id + '" value="' + esc(m.name || '') + '">'
+    + '<label class="f">Job title / role</label><input type="text" id="fx-role-' + m.id + '" value="' + esc(m.role || '') + '">'
+    + '<label class="f">Headline</label><input type="text" id="fx-head-' + m.id + '" value="' + esc(m.headline || '') + '">'
+    + '<label class="f">Hotel</label><select id="fx-hotel-' + m.id + '" style="width:100%;border:1.5px solid #cfdce9;border-radius:10px;padding:11px;font-size:15px;font-family:inherit;background:#fff">' + opts + '</select>'
+    + '<label class="f">Status</label><select id="fx-status-' + m.id + '" style="width:100%;border:1.5px solid #cfdce9;border-radius:10px;padding:11px;font-size:15px;font-family:inherit;background:#fff">' + sts + '</select>'
+    + '<label style="display:flex;gap:8px;align-items:center;font-size:14.5px;font-weight:600;color:#29425e;margin-top:12px"><input type="checkbox" id="fx-otw-' + m.id + '"' + (m.openToWork ? ' checked' : '') + ' style="width:19px;height:19px"> Open to work</label>'
+    + '<label style="display:flex;gap:8px;align-items:center;font-size:14.5px;font-weight:600;color:#29425e;margin-top:9px"><input type="checkbox" id="fx-rmpic-' + m.id + '" style="width:19px;height:19px"> Remove profile photo (also removes the ✓ Confirmed badge)</label>'
+    + '<label style="display:flex;gap:8px;align-items:center;font-size:14.5px;font-weight:600;color:#29425e;margin-top:9px"><input type="checkbox" id="fx-rmcov-' + m.id + '" style="width:19px;height:19px"> Remove cover photo</label>'
+    + '<div class="acts" style="margin-top:12px"><button class="gold" onclick="saveFix(\'' + m.id + '\')">Save fixes</button><button onclick="toggleFix(\'' + m.id + '\')">Cancel</button></div>'
+    + '</div>';
+}
+async function saveFix(mid){
+  var g = function(id){ var el = document.getElementById(id + mid); return el ? el.value : ''; };
+  var nm = g('fx-name-').trim();
+  if (!nm) { toast('Name cannot be empty'); return; }
+  var role = g('fx-role-'), head = g('fx-head-'), hotel = g('fx-hotel-'), status = g('fx-status-');
+  var otw = document.getElementById('fx-otw-' + mid).checked;
+  var rmp = document.getElementById('fx-rmpic-' + mid).checked;
+  var rmc = document.getElementById('fx-rmcov-' + mid).checked;
+  try {
+    await mutate(function(s){
+      var x = s.members.filter(function(y){ return y.id === mid; })[0]; if (!x) return;
+      x.name = nm; x.role = role; x.headline = head; x.hotelId = hotel || ''; x.status = status; x.openToWork = otw;
+      if (rmp) { x.pic = null; x.selfie = null; }
+      if (rmc) { x.cover = null; }
+      x.u = Date.now();
+    });
+    toast('Profile fixed');
+  } catch (e) { toast('Save failed — try again'); }
+}
 async function verifyHotel(hid){
   try { await mutate(function(s){ var h = s.hotels.filter(function(x){ return x.id === hid; })[0]; if (h) h.verified = true; }); toast('Hotel verified'); }
   catch (e) { toast('Save failed — try again'); }
@@ -236,6 +279,7 @@ function vOverview(){
     + tile(ms.filter(function(m){ return m.status === 'active'; }).length, 'Active')
     + tile(ms.filter(function(m){ return m.status === 'between'; }).length, 'Between properties')
     + tile(ms.filter(function(m){ return m.status === 'paused'; }).length, 'Paused')
+    + tile(ms.filter(function(m){ return m.status === 'blocked'; }).length, 'Blocked')
     + tile(ms.filter(function(m){ return m.selfie; }).length, '✓ Confirmed real')
     + tile(ps.length, 'Posts')
     + tile(ps.filter(function(p){ return p.type === 'job'; }).length, 'Job posts')
@@ -258,7 +302,10 @@ function memberRow(m){
     + '<div class="meta">' + esc(m.role || '') + (hh ? ' · ' + esc(hh.name) + (hh.city ? ', ' + esc(hh.city) : '') : ' · no hotel') + (m.headline ? '<br>' + esc(m.headline) : '')
     + '<br>' + esc(m.email || '') + ' · joined ' + (m.created ? new Date(m.created).toLocaleDateString() : '—') + ' · ' + (m.connections || []).length + ' connections · ' + endsReceived(m.id) + ' endorsements</div>'
     + '<div style="margin-top:5px">' + statusBadge(m) + ' ' + confBadge(m) + (m.openToWork ? ' <span class="badge b-act">🟢 Open to work</span>' : '') + '</div>'
-    + (mine ? '' : '<div class="acts"><button class="gold" onclick="togglePause(\'' + m.id + '\')">' + (m.status === 'paused' ? 'Unpause' : 'Pause account') + '</button><button class="danger" onclick="removeMember(\'' + m.id + '\')">Remove member</button></div>')
+    + (mine ? '' : '<div class="acts"><button class="gold" onclick="togglePause(\'' + m.id + '\')">' + (m.status === 'paused' ? 'Unpause' : 'Pause account') + '</button>'
+    + (m.status === 'blocked' ? '<button class="gold" onclick="toggleBlock(\'' + m.id + '\')">Unblock</button>' : '<button class="danger" onclick="toggleBlock(\'' + m.id + '\')">🚫 Block</button>')
+    + '<button onclick="toggleFix(\'' + m.id + '\')">✏️ Fix profile</button>'
+    + '<button class="danger" onclick="removeMember(\'' + m.id + '\')">Remove member</button></div>' + fixEditor(m))
     + '</div></div>';
 }
 function vMembers(){
