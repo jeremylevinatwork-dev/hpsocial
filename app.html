@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-build="hps-20261024-1226">
+<html lang="en" data-build="hps-20261024-1252">
 <head>
 <meta charset="utf-8">
 <script>
@@ -324,6 +324,7 @@ var joinPic = null;
 var drafts = {};
 /* ---- LinkedIn bundle: headline, experience, skills + endorsements, open to work ---- */
 var hlEdit = false, expAdd = false;
+var profEdit = false, achAdd = false, pfHotelId = null, pfNameDraft = null;
 var SKILL_LIST = ['Front Desk', 'Guest Service Recovery', 'Housekeeping', 'Food & Beverage', 'Bartending', 'Concierge', 'Valet & Bell Services', 'Maintenance & Engineering', 'Security & Loss Prevention', 'Reservations', 'Sales & Events', 'Kitchen & Culinary', 'Leadership & Supervision', 'Training & Onboarding', 'Night Audit', 'PMS & Hotel Systems', 'Spa & Wellness', 'Recreation & Activities'];
 function endsFor(mid, skill){ return (S.ends || []).filter(function(e){ return e.to === mid && e.skill === skill && !e.off; }); }
 function iEndorsed(mid, skill){ return !!me && endsFor(mid, skill).some(function(e){ return e.by === me.id; }); }
@@ -348,6 +349,108 @@ async function addExp(){
   me.exp = (me.exp || []).concat([{ id: uid('x'), role: role.slice(0, 60), hotel: hotel.slice(0, 80), from: from.slice(0, 12), to: to.slice(0, 12) }]);
   me.u = Date.now(); expAdd = false; await push(); saveCache(); render();
 }
+function toggleProfEdit(){
+  if (profEdit) { profEdit = false; pfNameDraft = null; }
+  else { profEdit = true; pfHotelId = me.hotelId; pfNameDraft = null; }
+  render();
+}
+function pfHotelSearch(q){
+  var res = document.getElementById('pf-hres'), add = document.getElementById('pf-hadd');
+  if (!res) return;
+  q = (q || '').trim().toLowerCase();
+  if (!q) { res.innerHTML = ''; if (add) add.innerHTML = ''; return; }
+  var hits = allHotels().filter(function(hh){ return (hh.name + ' ' + hh.brand + ' ' + hh.city + ' ' + hh.country).toLowerCase().indexOf(q) >= 0; }).slice(0, 14);
+  res.innerHTML = hits.map(function(hh){ return '<div onclick="pfPickHotel(\'' + hh.id + '\')">' + hotelLine(hh) + '</div>'; }).join('');
+  if (add) add.innerHTML = '<button class="ghostbtn" onclick="pfShowAddHotel()">Can\u2019t find yours? Add your hotel</button>';
+}
+function pfPickHotel(id){ pfHotelId = id; render(); }
+function pfShowAddHotel(){
+  var add = document.getElementById('pf-hadd'); if (!add) return;
+  add.innerHTML = '<label class="f">Hotel name</label><input id="pfa-name" placeholder="Hotel name">'
+    + '<label class="f">Brand (or Independent)</label><input id="pfa-brand" placeholder="Brand">'
+    + '<label class="f">City</label><input id="pfa-city" placeholder="City">'
+    + '<label class="f">Country</label><input id="pfa-country" placeholder="Country">'
+    + '<button class="bigbtn" onclick="pfDoAddHotel()">Add and select this hotel</button>';
+}
+async function pfDoAddHotel(){
+  var n = document.getElementById('pfa-name').value.trim(), b = document.getElementById('pfa-brand').value.trim() || 'Independent',
+      c = document.getElementById('pfa-city').value.trim(), co = document.getElementById('pfa-country').value.trim();
+  if (!n || !c || !co) { alert('Hotel name, city, and country are needed.'); return; }
+  var hh = { id: uid('h'), name: n, brand: b, city: c, country: co, verified: false };
+  S.hotels.push(hh); pfHotelId = hh.id; await push(); render();
+}
+async function saveProfileBasics(){
+  var nEl = document.getElementById('pf-name'); var name = nEl ? nEl.value.trim() : '';
+  var rEl = document.getElementById('pf-role'); var role = rEl ? rEl.value : me.role;
+  if (!name) { alert('Your name can\u2019t be empty.'); return; }
+  if (!pfHotelId) { alert('Pick the hotel where you work now \u2014 type its name and tap it in the list.'); return; }
+  me.name = name.slice(0, 60); me.role = role; me.hotelId = pfHotelId;
+  if (me.status === 'between') me.status = 'active';
+  me.u = Date.now(); profEdit = false; pfNameDraft = null;
+  await push(); saveCache(); render();
+}
+async function addAch(){
+  var t = document.getElementById('ach-title').value.trim(), b = document.getElementById('ach-by').value.trim(), y = document.getElementById('ach-yr').value.trim();
+  if (!t) { alert('Add the achievement title.'); return; }
+  me.ach = (me.ach || []).concat([{ id: uid('a'), title: t.slice(0, 70), by: b.slice(0, 70), yr: y.slice(0, 10) }]);
+  me.u = Date.now(); achAdd = false; await push(); saveCache(); render();
+}
+async function delAch(id){ if (!confirm('Remove this achievement?')) return; me.ach = (me.ach || []).filter(function(x){ return x.id !== id; }); me.u = Date.now(); await push(); saveCache(); render(); }
+/* ===== Résumé: the file lives in its OWN cloud row so profiles stay light ===== */
+var RESUME_CAP = 1500 * 1024;
+function resumeRowId(mid){ return 'hpsocial-resume-' + mid; }
+async function resumeChosen(inp){
+  var f = inp.files && inp.files[0]; if (!f) return;
+  if (f.size > RESUME_CAP) { alert('That file is ' + Math.round(f.size / 1024) + ' KB \u2014 the limit is about 1.5 MB. Export or scan it smaller and try again.'); inp.value = ''; return; }
+  var rd = new FileReader();
+  rd.onload = async function(){
+    try {
+      var h = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' };
+      var res = await fetch(SB_URL + '/rest/v1/app_records', { method: 'POST', headers: h, body: JSON.stringify([{ id: resumeRowId(me.id), app: 'hpsocial', data: { name: f.name, mime: f.type || '', data: rd.result, ts: Date.now() } }]) });
+      if (!res.ok) throw new Error('save ' + res.status);
+      me.resumeName = f.name; me.resumeTs = Date.now(); me.u = Date.now();
+      await push(); saveCache(); render();
+    } catch (e) { alert('The r\u00e9sum\u00e9 could not be saved \u2014 check your connection and try again.'); }
+  };
+  rd.readAsDataURL(f);
+}
+async function removeResume(){
+  if (!confirm('Remove your r\u00e9sum\u00e9 from HPSocial?')) return;
+  try {
+    var h = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
+    await fetch(SB_URL + '/rest/v1/app_records?id=eq.' + resumeRowId(me.id), { method: 'DELETE', headers: h });
+  } catch (e) {}
+  delete me.resumeName; delete me.resumeTs; me.u = Date.now();
+  await push(); saveCache(); render();
+}
+async function viewResume(mid){
+  try {
+    var h = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
+    var res = await fetch(SB_URL + '/rest/v1/app_records?id=eq.' + resumeRowId(mid) + '&select=data', { headers: h });
+    var rows = await res.json();
+    if (!rows.length || !rows[0].data || !rows[0].data.data) { alert('That r\u00e9sum\u00e9 could not be loaded.'); return; }
+    var d = rows[0].data;
+    var parts = String(d.data).split(',');
+    var mime = (parts[0].match(/data:([^;]+)/) || [])[1] || d.mime || 'application/octet-stream';
+    var bin = atob(parts.slice(1).join(','));
+    var arr = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    var url = URL.createObjectURL(new Blob([arr], { type: mime }));
+    showResumeOverlay(url, d.name || 'R\u00e9sum\u00e9', mime.indexOf('pdf') >= 0);
+  } catch (e) { alert('That r\u00e9sum\u00e9 could not be loaded.'); }
+}
+function showResumeOverlay(url, name, isPdf){
+  closeResumeOverlay();
+  var safe = String(name).replace(/["<>]/g, '');
+  var d = document.createElement('div');
+  d.id = 'resumePanel';
+  d.style.cssText = 'position:fixed;inset:0;z-index:1200;background:#081a2e;display:flex;flex-direction:column;';
+  d.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;color:#fff"><span style="font-weight:800">\uD83D\uDCC4 ' + esc(safe) + '</span><a href="' + url + '" download="' + esc(safe) + '" style="margin-left:auto;background:#c9a227;color:#081a2e;border-radius:9px;padding:9px 14px;font-weight:800;text-decoration:none">Download</a><button id="resClose" style="background:#c62828;color:#fff;border:0;border-radius:9px;padding:10px 16px;font-weight:800;cursor:pointer;font-family:inherit">Close</button></div>'
+    + (isPdf ? '<iframe src="' + url + '" style="flex:1;width:100%;border:0;background:#fff"></iframe>' : '<div style="flex:1;display:flex;align-items:center;justify-content:center;color:#b8c7d9;padding:20px;text-align:center">This is a Word document \u2014 tap Download to open it.</div>');
+  document.body.appendChild(d);
+  document.getElementById('resClose').onclick = closeResumeOverlay;
+}
+function closeResumeOverlay(){ var d = document.getElementById('resumePanel'); if (d) d.remove(); }
 async function delExp(id){ if (!confirm('Remove this experience entry?')) return; me.exp = (me.exp || []).filter(function(x){ return x.id !== id; }); me.u = Date.now(); await push(); saveCache(); render(); }
 async function addSkill(){
   var cu = document.getElementById('sk-custom').value.trim();
@@ -418,6 +521,7 @@ function mergePost(lp, cp){
   out.apps = Object.keys(aps);
   var vws = {}; (lp.viewers || []).concat(cp.viewers || []).forEach(function(x){ vws[x] = 1; });
   out.viewers = Object.keys(vws);
+  var fz = Math.max(lp.filledTs || 0, cp.filledTs || 0); if (fz) out.filledTs = fz;
   var reps = {}; (lp.reports || []).concat(cp.reports || []).forEach(function(x){ reps[x] = 1; });
   out.reports = Object.keys(reps);
   return out;
@@ -434,6 +538,9 @@ function unionState(a, b){
   var pp = {}; a.posts.forEach(function(x){ pp[x.id] = x; });
   b.posts.forEach(function(x){ pp[x.id] = pp[x.id] ? mergePost(pp[x.id], x) : x; });
   out.posts = Object.keys(pp).map(function(k){ return pp[k]; }).sort(function(x, y){ return y.ts - x.ts; });
+  /* Filled jobs are removed immediately, and job posts expire after 30 days — neither survives a sync, so no phone can resurrect them. */
+  var jobCutoff = Date.now() - 30 * 86400000;
+  out.posts = out.posts.filter(function(p){ return p.type !== 'job' || (!p.filledTs && p.ts >= jobCutoff); });
   /* No fake profiles: any legacy demo data is stripped on every sync. */
   function notDemo(id){ return String(id).indexOf('demo-') !== 0; }
   var ZZ = { 'zztest@example.com': 1, 'zzlinkedin@example.com': 1, 'zzbundle@example.com': 1 };
@@ -512,6 +619,10 @@ var HP_TOPICS = [
   { k: ['green', 'check', 'confirm', 'selfie', 'verified', 'verify', 'real person', 'not confirmed', 'badge'], a: 'The green ✓ means a member is confirmed real. Take a selfie when you join — or any time after: Profile → “Take a selfie to confirm”. The photo becomes your profile picture and the ✓ rides next to it everywhere — feed, comments, People. No selfie yet? Your profile shows “Not confirmed” until you take one.' },
   { k: ['join', 'sign up', 'signup', 'create account', 'new account', 'register'], a: 'Tap “Create new account” on the sign-in screen: your name, email, a password of 12+ characters, your role, and your hotel. The hotel search covers properties worldwide — and if yours is missing, you can add it right there.' },
   { k: ['forgot', 'password', 'reset', 'locked out', 'log in', 'login', 'sign in'], a: 'Use the email and password you joined with. Password reset by email arrives with the full launch — until then, keep your password somewhere safe.' },
+  { k: ['filled', 'remove job', 'close job', 'delete job', 'job filled', 'hired'], a: 'When a job you posted is filled, open the post and tap “✓ Mark filled — remove” — it disappears for everyone immediately, no waiting. Any job post also removes itself automatically after 30 days, so stale openings never linger. Jobs posted by the HPSocial Jobs board are refreshed in batches and expire the same way.' },
+  { k: ['edit profile', 'change job', 'new job', 'promotion', 'promoted', 'position', 'change hotel', 'moved'], a: 'Changed jobs or got promoted? Open your Profile and tap “✏️ Edit profile — Edit name, position & hotel”. You can update your name, pick your new position, and search for your new hotel (or add it if it is missing). Your connections, shout-outs, experience and history all stay with you — your reputation travels.' },
+  { k: ['resume', 'résumé', 'cv', 'upload'], a: 'Your résumé lives on your Profile, in the 📄 Résumé section. Tap “Upload résumé” (PDF or Word, up to 1.5 MB) — it is stored on its own so your profile stays fast, and members can View or Download it from your profile. You can replace or remove it any time from the same section.' },
+  { k: ['achievement', 'award', 'certificate', 'certification', 'employee of the month', 'honor'], a: 'Show off the wins: on your Profile, the 🏆 Achievements section takes awards, certifications and honors — tap “+ Add achievement”, give the title, who gave it, and the year. They show on your profile for everyone, next to your experience and skills.' },
   { k: ['live', 'stream', 'go live', 'broadcast', 'video'], a: 'Going live is one button 🔴 In the Feed composer tap “🔴 Go Live”, write what it is about, then pick how: “📹 Stream from this app” broadcasts your camera right here (up to about 6 watchers — huddles, tours, shout-outs; not recorded), or “▶️ YouTube Live” — start the stream in the YouTube app, paste its link, and it plays inside HPSocial for any audience size. Watchers tap “▶️ Watch live” on the post; the host ends the stream from the broadcast view.' },
   { k: ['endorse', 'endorsement', 'skill', 'headline', 'experience', 'open to work', 'resume', 'cv', 'career profile'], a: 'Your profile is your career résumé here 💼 On your Profile you can add a headline (one line under your name), an Experience list (role, hotel, dates), and Skills — other members tap “+ Endorse” on a skill to vouch for you, and the count shows on your profile. Turn on “Open to work” in the Experience section and a green badge shows on your profile, in People, and at the top of Jobs, so members with openings can find you.' },
   { k: ['shout', 'recognition', 'thank', 'praise', 'award'], a: 'Shout-outs are how reputations grow here 🏆 In the composer, tap Shout-out, write it, and choose the crew or one specific member. It lands on their profile under “Shout-outs received” — and it travels with them from property to property.' },
@@ -664,7 +775,7 @@ function tabbar(){
 }
 function go(v){ view = v; profileOf = null; render(); window.scrollTo(0, 0); }
 function shoutCountFor(id){ return S.posts.filter(function(p){ return p.type === 'shout' && p.toUid === id && !(p.reports && p.reports.length >= 2); }).length; }
-function postVisible(p){ return !(p.reports && p.reports.length >= 2) || (me && p.uid === me.id); }
+function postVisible(p){ if (p.type === 'job' && p.filledTs) return false; return !(p.reports && p.reports.length >= 2) || (me && p.uid === me.id); }
 
 function postCard(p){
   var a = memberById(p.uid); if (!a) return '';
@@ -705,7 +816,7 @@ function postCard(p){
     + '<button onclick="focusComment(\'' + p.id + '\')">💬 ' + (p.comments ? p.comments.length : 0) + ' comments</button>';
   if (p.type === 'job') {
     var on = me && (p.interested || []).indexOf(me.id) >= 0;
-    h += (me && p.uid === me.id) ? '<span style="margin-left:auto">' + (p.interested || []).length + ' interested \u00B7 ' + (p.apps || []).length + ' applied</span>' : '<button class="intbtn' + (on ? ' on' : '') + '" onclick="toggleInterest(\'' + p.id + '\')">' + (on ? '✓ Interested' : 'I\u2019m interested') + '</button>';
+    h += (me && p.uid === me.id) ? '<span style="margin-left:auto">' + (p.interested || []).length + ' interested \u00B7 ' + (p.apps || []).length + ' applied</span> <button class="intbtn" style="color:#b3261e;border-color:#e3b6b2" onclick="markFilled(\'' + p.id + '\')">✓ Mark filled — remove</button>' : '<button class="intbtn' + (on ? ' on' : '') + '" onclick="toggleInterest(\'' + p.id + '\')">' + (on ? '✓ Interested' : 'I\u2019m interested') + '</button>';
   } else if (me && p.uid !== me.id) {
     h += '<button class="rep" onclick="reportPost(\'' + p.id + '\')">🚩 Report</button>';
   }
@@ -1147,6 +1258,23 @@ function renderProfile(){
     + '<div class="stats"><div><b>' + m.connections.length + '</b><span>Connections</span></div><div><b>' + shoutCountFor(m.id) + '</b><span>Shout-outs</span></div><div><b>' + Math.max(0, Math.round((Date.now() - (m.created || Date.now())) / 86400000 / 30)) + '</b><span>Months in</span></div></div>'
     + (!mine && me ? '<div style="display:flex;gap:8px;margin:13px 0 2px"><button class="bigbtn" style="flex:1;margin:0" onclick="openThread(\'' + m.id + '\')">💬 Message</button><button class="connbtn' + (conn ? ' on' : '') + '" style="flex:1;margin:0" onclick="toggleConnect(\'' + m.id + '\')">' + (conn ? '✓ Connected' : 'Connect') + '</button></div>' : '')
     + '</div>';
+  if (mine) {
+    h += '<div class="card" style="margin-top:10px"><div style="display:flex;align-items:center;gap:8px"><div style="font-weight:800;color:#0f2c4c;font-size:15.5px;flex:1">✏️ Edit profile</div><button class="connbtn" style="margin:0" onclick="toggleProfEdit()">' + (profEdit ? 'Close' : 'Edit name, position & hotel') + '</button></div>';
+    if (profEdit) {
+      var roleOpts = ROLES.slice(); if (roleOpts.indexOf(m.role) < 0) roleOpts.unshift(m.role);
+      var curH = hotelById(pfHotelId || m.hotelId);
+      h += '<div style="display:grid;gap:8px;margin-top:10px">'
+        + '<label class="f">Your name</label><input id="pf-name" class="career-inp" maxlength="60" value="' + esc(pfNameDraft !== null ? pfNameDraft : m.name) + '" oninput="pfNameDraft=this.value">'
+        + '<label class="f">Position</label><select id="pf-role" class="career-inp">' + roleOpts.map(function(r){ return '<option' + (r === m.role ? ' selected' : '') + '>' + esc(r) + '</option>'; }).join('') + '</select>'
+        + '<label class="f">Hotel — where you work now</label>'
+        + (pfHotelId
+          ? '<div class="hpicked"><button onclick="pfHotelId=null;render()">Change</button>' + esc(curH ? curH.name : '') + '<div class="hm">' + esc(curH ? [curH.brand, curH.city, curH.country].filter(function(x){ return x; }).join(' · ') : '') + '</div></div>'
+          : '<input id="pf-hq" class="career-inp" placeholder="Start typing your hotel, brand, or city…" oninput="pfHotelSearch(this.value)" autocomplete="off"><div class="hresults" id="pf-hres"></div><div id="pf-hadd"></div>')
+        + '<div style="font-size:13px;color:#54687e;line-height:1.5">Changed jobs or got promoted? Update your position and hotel here — your connections, shout-outs and history all stay with you.</div>'
+        + '<div style="display:flex;gap:8px"><button class="bigbtn" style="flex:1;margin:0" onclick="saveProfileBasics()">Save changes</button><button class="ghostbtn" style="flex:1;margin:0" onclick="profEdit=false;pfNameDraft=null;render()">Cancel</button></div></div>';
+    }
+    h += '</div>';
+  }
   /* LinkedIn bundle: experience + skills sections */
   h += '<div class="secttl">💼 Experience</div><div class="card" style="margin-top:6px">';
   var exps = m.exp || [];
@@ -1159,6 +1287,26 @@ function renderProfile(){
       + '<button class="connbtn" style="margin:0" onclick="expAdd=!expAdd;render()">' + (expAdd ? 'Close form' : '+ Add experience') + '</button></div>';
     if (hlEdit) h += '<div style="margin-top:10px"><input id="hl-inp" class="career-inp" maxlength="120" placeholder="Headline — e.g. Front Desk Supervisor · Guest experience pro" value="' + esc(m.headline || '') + '"><div style="display:flex;gap:8px;margin-top:8px"><button class="bigbtn" style="flex:1;margin:0" onclick="saveHeadline()">Save headline</button><button class="ghostbtn" style="flex:1;margin:0" onclick="hlEdit=false;render()">Cancel</button></div></div>';
     if (expAdd) h += '<div style="margin-top:10px;display:grid;gap:8px"><input id="ex-role" class="career-inp" maxlength="60" placeholder="Role — e.g. Front Desk Supervisor"><input id="ex-hotel" class="career-inp" maxlength="80" placeholder="Hotel or company"><div style="display:flex;gap:8px"><input id="ex-from" class="career-inp" maxlength="12" placeholder="From — e.g. 2021"><input id="ex-to" class="career-inp" maxlength="12" placeholder="To — e.g. 2024"></div><label style="font-size:14px;color:#29425e"><input type="checkbox" id="ex-cur"> I work here now</label><button class="bigbtn" style="margin:0" onclick="addExp()">Add experience</button></div>';
+  }
+  h += '</div>';
+  h += '<div class="secttl">📄 Résumé</div><div class="card" style="margin-top:6px">';
+  if (m.resumeName) {
+    h += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><div style="flex:1;min-width:160px"><div style="font-weight:800;color:#0f2c4c;font-size:15px">📄 ' + esc(m.resumeName) + '</div><div style="font-size:12.5px;color:#8496ab">On file — visible to HPSocial members</div></div>'
+      + '<button class="connbtn" style="margin:0" onclick="viewResume(\'' + m.id + '\')">View</button>'
+      + (mine ? '<button class="connbtn" style="margin:0" onclick="removeResume()">Remove</button>' : '') + '</div>';
+  } else {
+    h += '<div style="font-size:14px;color:#54687e;line-height:1.5">No résumé on file.' + (mine ? ' Add yours — people hiring, and anyone you apply to, can see it right here on your profile.' : '') + '</div>';
+  }
+  if (mine) h += '<input type="file" id="resfile" accept=".pdf,.doc,.docx" style="display:none" onchange="resumeChosen(this)"><button class="bigbtn" onclick="document.getElementById(\'resfile\').click()">' + (m.resumeName ? 'Replace résumé' : '📄 Upload résumé (PDF or Word, up to 1.5 MB)') + '</button>';
+  h += '</div>';
+  h += '<div class="secttl">🏆 Achievements</div><div class="card" style="margin-top:6px">';
+  var achs = m.ach || [];
+  h += achs.length ? achs.map(function(x){
+    return '<div class="exrow"><div style="flex:1"><div style="font-weight:800;color:#0f2c4c;font-size:15px">🏆 ' + esc(x.title) + '</div><div style="font-size:13.5px;color:#54687e">' + esc(x.by || '') + (x.by && x.yr ? ' · ' : '') + esc(x.yr || '') + '</div></div>' + (mine ? '<button class="connbtn" style="margin:0;padding:4px 10px" onclick="delAch(\'' + x.id + '\')">✕</button>' : '') + '</div>';
+  }).join('') : '<div style="font-size:14px;color:#54687e;line-height:1.5">No achievements yet.' + (mine ? ' Add your awards, certifications and honors — Employee of the Month, Star Trainer, certifications.' : '') + '</div>';
+  if (mine) {
+    h += '<div style="margin-top:10px"><button class="connbtn" style="margin:0" onclick="achAdd=!achAdd;render()">' + (achAdd ? 'Close form' : '+ Add achievement') + '</button></div>';
+    if (achAdd) h += '<div style="margin-top:10px;display:grid;gap:8px"><input id="ach-title" class="career-inp" maxlength="70" placeholder="Achievement — e.g. Employee of the Month"><input id="ach-by" class="career-inp" maxlength="70" placeholder="Given by — e.g. Loews Hotels & Co"><input id="ach-yr" class="career-inp" maxlength="10" placeholder="Year — e.g. 2024"><button class="bigbtn" style="margin:0" onclick="addAch()">Add achievement</button></div>';
   }
   h += '</div>';
   h += '<div class="secttl">⭐ Skills & endorsements</div><div class="card" style="margin-top:6px">';
@@ -1332,6 +1480,12 @@ async function toggleLike(id){
   p.likesTs = Date.now(); saveCache();
   var card = document.getElementById('post-' + id);
   if (card) { var a = memberById(p.uid); }
+  await push(); render();
+}
+async function markFilled(id){
+  var p = S.posts.filter(function(x){ return x.id === id; })[0]; if (!p || p.uid !== me.id) return;
+  if (!confirm('Mark this job as FILLED? It is removed for everyone right away.')) return;
+  p.filledTs = Date.now();
   await push(); render();
 }
 async function toggleInterest(id){
