@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-build="hps-20261024-1252">
+<html lang="en" data-build="hps-20261024-1305">
 <head>
 <meta charset="utf-8">
 <script>
@@ -805,7 +805,7 @@ function postCard(p){
       var nv = (p.viewers || []).length;
       h += '<div style="margin-top:8px"><span class="livetag" style="' + (p.liveOn ? '' : 'background:#54687e') + '">' + (p.liveOn ? '🔴 LIVE now · ' + nv + ' watching' : '⏹ Stream ended') + '</span></div>';
       if (p.liveOn && me && p.uid !== me.id) h += '<button class="applybtn" onclick="watchLive(\'' + p.id + '\')">▶️ Watch live</button>';
-      if (p.liveOn && me && p.uid === me.id) h += '<button class="applybtn done" onclick="openLivePanel()">📹 You are live — open broadcast view</button>';
+      if (p.liveOn && me && p.uid === me.id) h += '<button class="applybtn done" onclick="openLivePanel()">📹 You are live — open broadcast view</button><button class="connbtn" style="margin:8px 0 0 8px;color:#b3261e;border-color:#e3b6b2" onclick="endLivePost(\'' + p.id + '\')">⏹ End stream</button>';
       if (!p.liveOn) h += '<div class="pmeta" style="margin-top:4px">This broadcast was live in the app and was not recorded.</div>';
     }
   }
@@ -913,6 +913,14 @@ function ytId(u){
   if (m) return m[1];
   if (/^[A-Za-z0-9_-]{11}$/.test(u)) return u;
   return '';
+}
+async function endLivePost(id){
+  var p = S.posts.filter(function(x){ return x.id === id; })[0]; if (!p) return;
+  if (LV.postId === id && LV.role === 'host') { await endLive(); return; }
+  if (!confirm('End this live stream?')) return;
+  p.liveOn = false;
+  try { await liveMutate(function(d){ delete d.sessions[id]; }); } catch (e) {}
+  await push(); render();
 }
 async function endYtLive(id){
   var p = S.posts.filter(function(x){ return x.id === id; })[0]; if (!p) return;
