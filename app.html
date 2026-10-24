@@ -633,6 +633,8 @@ function postCard(p){
   }
   if (p.type === 'job') {
     h += '<span class="jobtag">💼 Hiring</span><div class="jobrole">' + esc(p.jobRole || 'Team member') + ' — ' + (hh ? esc(hh.name) : '') + '</div>';
+    var jloc = p.loc || jobLocText(p); var jd = jobDist(p);
+    if (jloc || jd != null) h += '<div class="pmeta" style="margin-top:2px">\uD83D\uDCCD ' + esc(jloc || '') + (jd != null ? ' \u00B7 <b style="color:#177245">~' + Math.max(1, Math.round(jd)) + ' mi away</b>' : '') + '</div>';
   }
   h += '<div class="ptxt">' + esc(p.text) + '</div>';
   if (likers.length) h += '<div class="likenames">👍 ' + esc(likers.slice(0, 6).join(', ')) + (likers.length > 6 ? ' +' + (likers.length - 6) : '') + '</div>';
@@ -678,6 +680,7 @@ function renderFeed(){
     h += '<div class="crow"><select id="cmp-to"><option value="">To: my whole crew</option>' + S.members.filter(function(m){ return me && m.id !== me.id && m.status !== 'paused' && m.status !== 'blocked'; }).map(function(m){ return '<option value="' + m.id + '">To: ' + esc(m.name) + '</option>'; }).join('') + '</select></div>';
   }
   if (cmpType === 'job') {
+    h += '<div class="crow"><input type="text" id="cmp-loc" placeholder="Job location \u2014 city, state (e.g. Orlando, FL)" value="' + esc(drafts.cmpLoc || '') + '"></div>';
     h += '<div class="crow"><select id="cmp-role">' + ROLES.map(function(r){ return '<option>' + esc(r) + '</option>'; }).join('') + '</select></div>';
   }
   h += '<div class="crow"><button class="post" style="flex:1;padding:12px" onclick="doPost()">Share</button></div></div>';
@@ -702,13 +705,69 @@ function renderPeople(){
   h += '<div class="foot">Tap a person to see their profile and shout-outs.</div></div>';
   return h;
 }
+/* ---- Jobs pinpoint (device-local only: your location is never uploaded) ---- */
+var pin = null; try { pin = JSON.parse(localStorage.getItem('hps-pin') || 'null'); } catch (e) { pin = null; }
+var pinRadius = 0;
+function havMi(lat1, lng1, lat2, lng2){ var R = 3958.8, dLa = (lat2 - lat1) * Math.PI / 180, dLo = (lng2 - lng1) * Math.PI / 180; var a = Math.sin(dLa / 2) * Math.sin(dLa / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLo / 2) * Math.sin(dLo / 2); return 2 * R * Math.asin(Math.sqrt(a)); }
+function geoCache(){ try { return JSON.parse(localStorage.getItem('hps-geocache') || '{}'); } catch (e) { return {}; } }
+function geoCacheGet(q){ if (!q) return null; return geoCache()[String(q).trim().toLowerCase()] || null; }
+function geoCachePut(q, g){ var c = geoCache(); c[String(q).trim().toLowerCase()] = g; try { localStorage.setItem('hps-geocache', JSON.stringify(c)); } catch (e) {} }
+async function geocodeCity(q){
+  var hit = geoCacheGet(q); if (hit) return hit;
+  try {
+    var res = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=' + encodeURIComponent(q));
+    var arr = await res.json();
+    if (arr && arr.length) { var g = { lat: parseFloat(arr[0].lat), lng: parseFloat(arr[0].lon) }; geoCachePut(q, g); return g; }
+  } catch (e) {}
+  return null;
+}
+function jobLocText(p){
+  if (p.loc) return p.loc;
+  var first = (p.text || '').split('\n')[0] || '';
+  var i = first.indexOf('\u2014');
+  return i >= 0 ? first.slice(i + 1).trim() : '';
+}
+function jobDist(p){
+  if (!pin) return null;
+  if (typeof p.lat === 'number' && typeof p.lng === 'number') return havMi(pin.lat, pin.lng, p.lat, p.lng);
+  var g = geoCacheGet(jobLocText(p));
+  return g ? havMi(pin.lat, pin.lng, g.lat, g.lng) : null;
+}
+function pinFromDevice(){
+  if (!navigator.geolocation) { alert('This device cannot share its location. Use Set city instead.'); return; }
+  navigator.geolocation.getCurrentPosition(function(pos){
+    pin = { lat: pos.coords.latitude, lng: pos.coords.longitude, label: 'Your location' };
+    try { localStorage.setItem('hps-pin', JSON.stringify(pin)); } catch (e) {}
+    render();
+  }, function(){ alert('Location was not shared. You can set a city instead.'); }, { timeout: 10000 });
+}
+async function pinFromCity(){
+  var c = prompt('Show jobs near which city? (City, State \u2014 or a ZIP code)');
+  if (!c || !c.trim()) return;
+  var g = await geocodeCity(c.trim());
+  if (!g) { alert('Could not find that place \u2014 try City, State.'); return; }
+  pin = { lat: g.lat, lng: g.lng, label: c.trim() };
+  try { localStorage.setItem('hps-pin', JSON.stringify(pin)); } catch (e) {}
+  render();
+}
+function pinClear(){ pin = null; pinRadius = 0; try { localStorage.removeItem('hps-pin'); } catch (e) {} render(); }
+function pinBar(){
+  if (!pin) return '<div class="card" style="margin-top:6px"><div style="font-weight:800;color:#0f2c4c">\uD83D\uDCCD Jobs near you</div><div style="font-size:14px;color:#54687e;line-height:1.5;margin-top:3px">Set a pinpoint and openings sort by distance. Your pinpoint stays on this phone \u2014 it is never uploaded.</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="connbtn" style="margin:0" onclick="pinFromDevice()">\uD83D\uDCCD Use my location</button><button class="connbtn" style="margin:0" onclick="pinFromCity()">\u270F\uFE0F Set city or ZIP</button></div></div>';
+  return '<div class="card" style="margin-top:6px"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div style="font-weight:800;color:#0f2c4c">\uD83D\uDCCD Near: ' + esc(pin.label) + '</div><select onchange="pinRadius=+this.value;render()" style="border:1.5px solid #cfdce9;border-radius:9px;padding:7px 9px;font-size:14px;font-family:inherit;background:#fff"><option value="0"' + (pinRadius === 0 ? ' selected' : '') + '>Any distance</option><option value="25"' + (pinRadius === 25 ? ' selected' : '') + '>Within 25 mi</option><option value="50"' + (pinRadius === 50 ? ' selected' : '') + '>Within 50 mi</option><option value="100"' + (pinRadius === 100 ? ' selected' : '') + '>Within 100 mi</option></select><button class="connbtn" style="margin:0" onclick="pinFromCity()">Change</button><button class="connbtn" style="margin:0" onclick="pinClear()">\u2715 Clear</button></div></div>';
+}
 function renderJobs(){
-  var jobs = S.posts.filter(function(p){ return p.type === 'job' && postVisible(p); }).sort(function(a, b){ return b.ts - a.ts; });
+  var raw = S.posts.filter(function(p){ return p.type === 'job' && postVisible(p); });
+  var jobs = raw.map(function(p){ return { p: p, d: jobDist(p) }; });
+  if (pin) jobs.sort(function(a, b){ return (a.d == null ? 1e12 : a.d) - (b.d == null ? 1e12 : b.d) || b.p.ts - a.p.ts; });
+  else jobs.sort(function(a, b){ return b.p.ts - a.p.ts; });
+  if (pin && pinRadius) jobs = jobs.filter(function(x){ return x.d != null && x.d <= pinRadius; });
+  jobs = jobs.map(function(x){ return x.p; });
   var ow = S.members.filter(function(x){ return x.openToWork && x.status !== 'paused' && x.status !== 'blocked'; });
   var owStrip = ow.length ? '<div class="card" style="margin-top:6px"><div style="font-weight:800;color:#0f2c4c">🟢 Open to work — ' + ow.length + ' member' + (ow.length > 1 ? 's' : '') + '</div><div style="font-size:14px;line-height:1.7;margin-top:3px">' + ow.map(function(x){ return '<a href="#" onclick="openProfile(\'' + x.id + '\');return false" style="color:#177245;font-weight:700;text-decoration:none">' + esc(x.name) + '</a>'; }).join(' · ') + '</div></div>' : '';
   return '<div class="view"><div class="secttl" style="margin-top:2px">💼 Openings across hospitality</div>'
+    + pinBar()
     + owStrip
-    + (jobs.length ? jobs.map(postCard).join('') : '<div class="empty">No openings posted yet. Know one? Post it from the Feed with the 💼 Job button.</div>')
+    + (jobs.length ? jobs.map(postCard).join('') : '<div class="empty">' + (pin && pinRadius ? 'No openings within ' + pinRadius + ' miles of ' + esc(pin.label) + ' yet \u2014 try Any distance.' : 'No openings posted yet. Know one? Post it from the Feed with the 💼 Job button.') + '</div>')
     + '<div class="foot">Posted by hospitality people, for hospitality people.</div></div>';
 }
 function openProfile(id){ profileOf = id; render(); window.scrollTo(0, 0); }
@@ -886,7 +945,7 @@ async function doPost(){
   if (!text) { alert('Write something first.'); return; }
   var p = { id: uid('p'), uid: me.id, type: cmpType, text: text, likes: [], likesTs: 0, comments: [], commentsTs: 0, interested: [], reports: [], ts: Date.now() };
   if (cmpType === 'shout') { var s = document.getElementById('cmp-to'); p.toUid = s && s.value ? s.value : null; }
-  if (cmpType === 'job') { var r = document.getElementById('cmp-role'); p.jobRole = r ? r.value : 'Team member'; view = 'feed'; feedFilter = 'jobs'; }
+  if (cmpType === 'job') { var r = document.getElementById('cmp-role'); p.jobRole = r ? r.value : 'Team member'; var le = document.getElementById('cmp-loc'); p.loc = le ? le.value.trim() : ''; if (p.loc) { var gc0 = geoCacheGet(p.loc); if (gc0) { p.lat = gc0.lat; p.lng = gc0.lng; } else { geocodeCity(p.loc).then(function(g){ if (g) { p.lat = g.lat; p.lng = g.lng; push(); } }); } } drafts.cmpLoc = ''; view = 'feed'; feedFilter = 'jobs'; }
   S.posts.unshift(p); drafts.cmp = ''; await push(); render();
 }
 async function toggleLike(id){
