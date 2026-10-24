@@ -83,6 +83,11 @@
   .intbtn.on { background:#2e7d32; }
   .applybtn { display:block; width:100%; margin:10px 0 2px; border:0; background:#0f2c4c; color:#fff; border-radius:10px; padding:11px; font-weight:800; font-size:14.5px; cursor:pointer; font-family:inherit; }
   .applybtn.done { background:#2e7d32; }
+  .livetag { display:inline-block; background:#c62828; color:#fff; font-weight:800; font-size:12.5px; border-radius:999px; padding:4px 11px; letter-spacing:.3px; }
+  .ytwrap { position:relative; padding-top:56.25%; border-radius:12px; overflow:hidden; margin-top:8px; background:#000; }
+  .ytwrap iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
+  .liveopt { flex:1; border:1.5px solid #cfdce9; background:#fff; border-radius:10px; padding:11px 8px; font-weight:800; font-size:14px; cursor:pointer; font-family:inherit; color:#29425e; }
+  .liveopt.on { background:#c62828; border-color:#c62828; color:#fff; }
   .likenames { font-size:12px; color:#a8842a; font-weight:700; margin-top:6px; }
   .cmts { margin-top:9px; }
   .cmt { display:flex; gap:8px; margin-top:8px; font-size:14px; line-height:1.45; }
@@ -297,6 +302,7 @@ var S = null;            /* {members:[], hotels:[], posts:[]} */
 var me = null;           /* my member record */
 var view = 'feed', feedFilter = 'all', profileOf = null;
 var gateTab = 'login', pickedHotel = null, cmpType = 'post';
+var liveMode = 'app';
 var joinPic = null;
 var drafts = {};
 /* ---- LinkedIn bundle: headline, experience, skills + endorsements, open to work ---- */
@@ -393,6 +399,8 @@ function mergePost(lp, cp){
   out.interested = Object.keys(ints);
   var aps = {}; (lp.apps || []).concat(cp.apps || []).forEach(function(x){ aps[x] = 1; });
   out.apps = Object.keys(aps);
+  var vws = {}; (lp.viewers || []).concat(cp.viewers || []).forEach(function(x){ vws[x] = 1; });
+  out.viewers = Object.keys(vws);
   var reps = {}; (lp.reports || []).concat(cp.reports || []).forEach(function(x){ reps[x] = 1; });
   out.reports = Object.keys(reps);
   return out;
@@ -487,6 +495,7 @@ var HP_TOPICS = [
   { k: ['green', 'check', 'confirm', 'selfie', 'verified', 'verify', 'real person', 'not confirmed', 'badge'], a: 'The green ✓ means a member is confirmed real. Take a selfie when you join — or any time after: Profile → “Take a selfie to confirm”. The photo becomes your profile picture and the ✓ rides next to it everywhere — feed, comments, People. No selfie yet? Your profile shows “Not confirmed” until you take one.' },
   { k: ['join', 'sign up', 'signup', 'create account', 'new account', 'register'], a: 'Tap “Create new account” on the sign-in screen: your name, email, a password of 12+ characters, your role, and your hotel. The hotel search covers properties worldwide — and if yours is missing, you can add it right there.' },
   { k: ['forgot', 'password', 'reset', 'locked out', 'log in', 'login', 'sign in'], a: 'Use the email and password you joined with. Password reset by email arrives with the full launch — until then, keep your password somewhere safe.' },
+  { k: ['live', 'stream', 'go live', 'broadcast', 'video'], a: 'Going live is one button 🔴 In the Feed composer tap “🔴 Go Live”, write what it is about, then pick how: “📹 Stream from this app” broadcasts your camera right here (up to about 6 watchers — huddles, tours, shout-outs; not recorded), or “▶️ YouTube Live” — start the stream in the YouTube app, paste its link, and it plays inside HPSocial for any audience size. Watchers tap “▶️ Watch live” on the post; the host ends the stream from the broadcast view.' },
   { k: ['endorse', 'endorsement', 'skill', 'headline', 'experience', 'open to work', 'resume', 'cv', 'career profile'], a: 'Your profile is your career résumé here 💼 On your Profile you can add a headline (one line under your name), an Experience list (role, hotel, dates), and Skills — other members tap “+ Endorse” on a skill to vouch for you, and the count shows on your profile. Turn on “Open to work” in the Experience section and a green badge shows on your profile, in People, and at the top of Jobs, so members with openings can find you.' },
   { k: ['shout', 'recognition', 'thank', 'praise', 'award'], a: 'Shout-outs are how reputations grow here 🏆 In the composer, tap Shout-out, write it, and choose the crew or one specific member. It lands on their profile under “Shout-outs received” — and it travels with them from property to property.' },
   { k: ['job', 'hiring', 'opening', 'work', 'career', 'interested', 'apply'], a: 'Tap 💼 Jobs to see openings posted by members across hospitality. To post one: in the composer tap Job, name the role and write the details. See one you like? Tap “I\'m interested” and the poster sees your name.' },
@@ -659,6 +668,19 @@ function postCard(p){
     var jloc = p.loc || jobLocText(p); var jd = jobDist(p);
     if (jloc || jd != null) h += '<div class="pmeta" style="margin-top:2px">\uD83D\uDCCD ' + esc(jloc || '') + (jd != null ? ' \u00B7 <b style="color:#177245">~' + Math.max(1, Math.round(jd)) + ' mi away</b>' : '') + '</div>';
   }
+  if (p.type === 'live') {
+    if (p.liveMode === 'yt' && p.ytId) {
+      h += '<div style="margin-top:8px"><span class="livetag">' + (p.liveOn ? '🔴 LIVE on YouTube' : '▶️ Live replay') + '</span></div>';
+      h += '<div class="ytwrap"><iframe src="https://www.youtube-nocookie.com/embed/' + p.ytId + '" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture"></iframe></div>';
+      if (me && p.uid === me.id && p.liveOn) h += '<button class="connbtn" style="margin-top:8px" onclick="endYtLive(\'' + p.id + '\')">End live</button>';
+    } else {
+      var nv = (p.viewers || []).length;
+      h += '<div style="margin-top:8px"><span class="livetag" style="' + (p.liveOn ? '' : 'background:#54687e') + '">' + (p.liveOn ? '🔴 LIVE now · ' + nv + ' watching' : '⏹ Stream ended') + '</span></div>';
+      if (p.liveOn && me && p.uid !== me.id) h += '<button class="applybtn" onclick="watchLive(\'' + p.id + '\')">▶️ Watch live</button>';
+      if (p.liveOn && me && p.uid === me.id) h += '<button class="applybtn done" onclick="openLivePanel()">📹 You are live — open broadcast view</button>';
+      if (!p.liveOn) h += '<div class="pmeta" style="margin-top:4px">This broadcast was live in the app and was not recorded.</div>';
+    }
+  }
   if (p.type === 'job' && me && p.uid !== me.id) { var apd = (p.apps || []).indexOf(me.id) >= 0; h += '<button class="applybtn' + (apd ? ' done' : '') + '" onclick="applyJob(\'' + p.id + '\')">' + (apd ? '\u2713 Applied \u00B7 open the posting again' : '\uD83D\uDCE9 Apply for this job') + '</button>'; }
   h += '<div class="ptxt">' + linkify(esc(p.text)) + '</div>';
   if (likers.length) h += '<div class="likenames">👍 ' + esc(likers.slice(0, 6).join(', ')) + (likers.length > 6 ? ' +' + (likers.length - 6) : '') + '</div>';
@@ -689,6 +711,7 @@ function feedPosts(){
   if (feedFilter === 'mine' && me) list = list.filter(function(p){ var a = memberById(p.uid); return a && a.hotelId === me.hotelId; });
   if (feedFilter === 'shouts') list = list.filter(function(p){ return p.type === 'shout'; });
   if (feedFilter === 'jobs') list = list.filter(function(p){ return p.type === 'job'; });
+  if (feedFilter === 'live') list = list.filter(function(p){ return p.type === 'live'; });
   if (feedFilter === 'near' && me) { var mh = myHotel(); if (mh) list = list.filter(function(p){ var a = memberById(p.uid); var hh = a ? hotelById(a.hotelId) : null; return hh && hh.country === mh.country; }); }
   return list.sort(function(a, b){ return b.ts - a.ts; });
 }
@@ -698,8 +721,9 @@ function renderFeed(){
   h += '<div class="composer"><div class="chips">'
     + '<button class="' + (cmpType === 'post' ? 'on' : '') + '" onclick="cmpType=\'post\';render()">✏️ Post</button>'
     + '<button class="' + (cmpType === 'shout' ? 'on gold' : '') + '" onclick="cmpType=\'shout\';render()">🏆 Shout-out</button>'
-    + '<button class="' + (cmpType === 'job' ? 'on' : '') + '" onclick="cmpType=\'job\';render()">💼 Job</button></div>'
-    + '<textarea id="cmp-text" oninput="drafts.cmp=this.value" placeholder="' + (cmpType === 'shout' ? 'Who went above and beyond?' : cmpType === 'job' ? 'Describe the opening…' : 'Share with the floor…') + '">' + esc(drafts.cmp || '') + '</textarea>';
+    + '<button class="' + (cmpType === 'job' ? 'on' : '') + '" onclick="cmpType=\'job\';render()">💼 Job</button>'
+    + '<button class="' + (cmpType === 'live' ? 'on' : '') + '" style="' + (cmpType === 'live' ? 'background:#c62828;border-color:#c62828;color:#fff' : '') + '" onclick="cmpType=\'live\';render()">🔴 Go Live</button></div>'
+    + '<textarea id="cmp-text" oninput="drafts.cmp=this.value" placeholder="' + (cmpType === 'shout' ? 'Who went above and beyond?' : cmpType === 'job' ? 'Describe the opening…' : cmpType === 'live' ? 'What is this live about?' : 'Share with the floor…') + '">' + esc(drafts.cmp || '') + '</textarea>';
   if (cmpType === 'shout') {
     h += '<div class="crow"><select id="cmp-to"><option value="">To: my whole crew</option>' + S.members.filter(function(m){ return me && m.id !== me.id && m.status !== 'paused' && m.status !== 'blocked'; }).map(function(m){ return '<option value="' + m.id + '">To: ' + esc(m.name) + '</option>'; }).join('') + '</select></div>';
   }
@@ -707,9 +731,14 @@ function renderFeed(){
     h += '<div class="crow"><input type="text" id="cmp-loc" placeholder="Job location \u2014 city, state (e.g. Orlando, FL)" value="' + esc(drafts.cmpLoc || '') + '"></div>';
     h += '<div class="crow"><select id="cmp-role">' + ROLES.map(function(r){ return '<option>' + esc(r) + '</option>'; }).join('') + '</select></div>';
   }
-  h += '<div class="crow"><button class="post" style="flex:1;padding:12px" onclick="doPost()">Share</button></div></div>';
+  if (cmpType === 'live') {
+    h += '<div class="crow" style="gap:8px"><button class="liveopt' + (liveMode === 'app' ? ' on' : '') + '" onclick="liveMode=\'app\';render()">📹 Stream from this app</button><button class="liveopt' + (liveMode === 'yt' ? ' on' : '') + '" onclick="liveMode=\'yt\';render()">▶️ YouTube Live</button></div>';
+    if (liveMode === 'yt') h += '<div class="crow"><input type="text" id="cmp-yt" placeholder="Paste your YouTube Live link"></div><div style="font-size:13px;color:#54687e;line-height:1.5">Start your stream in the YouTube app first, then paste its link — it plays right here in HPSocial, for any audience size.</div>';
+    else h += '<div style="font-size:13px;color:#54687e;line-height:1.5">Your camera opens right here in the app. Up to about 6 members can watch live — perfect for huddles, property tours and shout-outs. App streams are not recorded.</div>';
+  }
+  h += '<div class="crow"><button class="post" style="flex:1;padding:12px" onclick="doPost()">' + (cmpType === 'live' ? '🔴 Go Live' : 'Share') + '</button></div></div>';
   h += '<div class="filters">'
-    + [['all', '🌍 Everyone'], ['mine', '🏨 My property'], ['near', '📍 My country'], ['shouts', '🏆 Shout-outs'], ['jobs', '💼 Jobs']].map(function(f){ return '<button class="' + (feedFilter === f[0] ? 'on' : '') + '" onclick="feedFilter=\'' + f[0] + '\';render()">' + f[1] + '</button>'; }).join('') + '</div>';
+    + [['all', '🌍 Everyone'], ['mine', '🏨 My property'], ['near', '📍 My country'], ['shouts', '🏆 Shout-outs'], ['jobs', '💼 Jobs'], ['live', '🔴 Live']].map(function(f){ return '<button class="' + (feedFilter === f[0] ? 'on' : '') + '" onclick="feedFilter=\'' + f[0] + '\';render()">' + f[1] + '</button>'; }).join('') + '</div>';
   var list = feedPosts();
   h += list.length ? list.map(postCard).join('') : '<div class="empty">Nothing here yet — be the first to post.</div>';
   h += '<div class="foot">HPSocial · Hospitality only, worldwide</div></div>';
@@ -749,6 +778,206 @@ async function applyJob(id){
   }
   await push(); saveCache(); render();
 }
+/* ===== Live: one button, two ways ===== */
+function ytId(u){
+  u = (u || '').trim(); if (!u) return '';
+  var m = u.match(/(?:youtube\.com\/(?:watch\?v=|live\/|shorts\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/);
+  if (m) return m[1];
+  if (/^[A-Za-z0-9_-]{11}$/.test(u)) return u;
+  return '';
+}
+async function endYtLive(id){
+  var p = S.posts.filter(function(x){ return x.id === id; })[0]; if (!p) return;
+  p.liveOn = false; await push(); render();
+}
+var LIVE_ROW = 'hpsocial-live';
+var ICE_SERVERS = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+var LV = { stream: null, postId: null, role: null, timer: null, pcs: {}, pc: null, iceSeen: {}, pendingIce: {}, iceDirty: false };
+async function liveGet(){
+  var h = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
+  var res = await fetch(SB_URL + '/rest/v1/app_records?id=eq.' + LIVE_ROW + '&select=data', { headers: h });
+  if (!res.ok) return { sessions: {} };
+  var rows = await res.json();
+  return (rows.length && rows[0].data) ? rows[0].data : { sessions: {} };
+}
+async function liveSet(d){
+  var h = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' };
+  await fetch(SB_URL + '/rest/v1/app_records', { method: 'POST', headers: h, body: JSON.stringify([{ id: LIVE_ROW, app: 'hpsocial', data: d }]) });
+}
+async function liveMutate(fn){
+  var d = await liveGet();
+  d.sessions = d.sessions || {};
+  var cutoff = Date.now() - 6 * 3600 * 1000;
+  Object.keys(d.sessions).forEach(function(k){ if ((d.sessions[k].t || 0) < cutoff) delete d.sessions[k]; });
+  fn(d);
+  await liveSet(d);
+}
+function ensureLivePanel(){
+  if (document.getElementById('livePanel')) return;
+  var d = document.createElement('div');
+  d.id = 'livePanel';
+  d.style.cssText = 'display:none;position:fixed;inset:0;z-index:1200;background:#081a2e;flex-direction:column;';
+  d.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;color:#fff"><span id="lvTitle" style="font-weight:800">\uD83D\uDD34 LIVE</span><span id="lvCount" style="color:#b8c7d9;font-size:13.5px"></span><button id="lvHide" style="margin-left:auto;background:transparent;border:1.5px solid #54687e;color:#fff;border-radius:9px;padding:9px 13px;font-weight:800;cursor:pointer;font-family:inherit">Hide</button><button id="lvEnd" style="background:#c62828;color:#fff;border:0;border-radius:9px;padding:10px 16px;font-weight:800;cursor:pointer;font-family:inherit">End</button></div><video id="lvVideo" autoplay playsinline style="flex:1;width:100%;min-height:0;background:#000;object-fit:contain"></video><div style="padding:10px 14px;color:#8496ab;font-size:12.5px">Live in HPSocial \u00B7 app streams are not recorded</div>';
+  document.body.appendChild(d);
+  document.getElementById('lvEnd').onclick = function(){ if (LV.role === 'host') endLive(); else leaveLive(); };
+  document.getElementById('lvHide').onclick = function(){ closeLivePanel(); };
+}
+function openLivePanel(){
+  ensureLivePanel();
+  var d = document.getElementById('livePanel'); d.style.display = 'flex';
+  var v = document.getElementById('lvVideo');
+  if (LV.role === 'host' && LV.stream && v) { v.srcObject = LV.stream; v.muted = true; }
+  lvPanelState();
+}
+function closeLivePanel(){ var d = document.getElementById('livePanel'); if (d) d.style.display = 'none'; }
+function lvPanelState(){
+  var t = document.getElementById('lvTitle'); if (!t) return;
+  var e = document.getElementById('lvEnd');
+  if (LV.role === 'host') { t.textContent = '\uD83D\uDD34 You are LIVE'; if (e) e.textContent = 'End stream'; }
+  else { t.textContent = '\uD83D\uDD34 LIVE'; if (e) e.textContent = 'Leave'; }
+  lvCountUpdate();
+}
+function lvCountUpdate(){
+  var c = document.getElementById('lvCount'); if (!c || !LV.postId) return;
+  var p = S.posts.filter(function(x){ return x.id === LV.postId; })[0];
+  var nv = p ? (p.viewers || []).length : 0;
+  c.textContent = nv ? nv + ' watching' : '';
+}
+function addPostViewer(postId, vuid){
+  var p = S.posts.filter(function(x){ return x.id === postId; })[0]; if (!p) return;
+  p.viewers = p.viewers || [];
+  if (p.viewers.indexOf(vuid) < 0) { p.viewers.push(vuid); push(); }
+}
+function lvCleanupMedia(){
+  if (LV.timer) { clearInterval(LV.timer); LV.timer = null; }
+  Object.keys(LV.pcs).forEach(function(k){ try { LV.pcs[k].close(); } catch (e) {} });
+  LV.pcs = {};
+  if (LV.pc) { try { LV.pc.close(); } catch (e) {} LV.pc = null; }
+  if (LV.stream) { LV.stream.getTracks().forEach(function(tr){ try { tr.stop(); } catch (e) {} }); LV.stream = null; }
+  LV.postId = null; LV.role = null; LV.iceSeen = {}; LV.pendingIce = {}; LV.iceDirty = false;
+}
+async function liveCamStart(){
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('no gum');
+    LV.stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    return true;
+  } catch (e) {
+    LV.stream = null;
+    alert('Camera unavailable \u2014 check the camera permission for this app or browser, or pick YouTube Live instead.');
+    return false;
+  }
+}
+async function startBroadcast(postId){
+  if (!window.RTCPeerConnection) {
+    var p = S.posts.filter(function(x){ return x.id === postId; })[0];
+    if (p) { p.liveOn = false; await push(); render(); }
+    lvCleanupMedia();
+    alert('Live broadcasting is not supported in this browser view \u2014 try HPSocial in Safari or Chrome, or use YouTube Live.');
+    return;
+  }
+  LV.role = 'host'; LV.postId = postId; LV.pcs = {}; LV.iceSeen = {}; LV.pendingIce = {};
+  await liveMutate(function(d){ d.sessions[postId] = { want: [], offers: {}, answers: {}, iceB: {}, iceV: {}, t: Date.now() }; });
+  openLivePanel();
+  LV.timer = setInterval(lvTickB, 1500);
+}
+function lvMakePcB(vuid){
+  var pc = null;
+  try { pc = new RTCPeerConnection(ICE_SERVERS); } catch (e) { return; }
+  LV.pcs[vuid] = pc;
+  if (LV.stream) LV.stream.getTracks().forEach(function(tr){ try { pc.addTrack(tr, LV.stream); } catch (e) {} });
+  pc.onicecandidate = function(e){ if (e.candidate) { LV.pendingIce[vuid] = LV.pendingIce[vuid] || []; LV.pendingIce[vuid].push(e.candidate); } };
+  pc.onconnectionstatechange = function(){ if (pc.connectionState === 'connected') addPostViewer(LV.postId, vuid); };
+  pc.createOffer().then(function(off){ return pc.setLocalDescription(off); }).then(function(){
+    liveMutate(function(dd){ var ss = dd.sessions[LV.postId]; if (ss) { ss.offers = ss.offers || {}; ss.offers[vuid] = pc.localDescription; } });
+  }).catch(function(){});
+}
+async function lvTickB(){
+  if (!LV.postId) return;
+  var d = await liveGet();
+  var s = d.sessions && d.sessions[LV.postId];
+  if (!s) return;
+  var dirty = false;
+  (s.want || []).slice(0, 6).forEach(function(vuid){
+    if (!LV.pcs[vuid]) lvMakePcB(vuid);
+    var pc = LV.pcs[vuid]; if (!pc) return;
+    var ans = s.answers && s.answers[vuid];
+    if (ans && !pc._ansSet) { pc._ansSet = true; var pr = pc.setRemoteDescription(ans); if (pr && pr.catch) pr.catch(function(){}); }
+    var iv = (s.iceV && s.iceV[vuid]) || []; var seen = LV.iceSeen[vuid] || 0;
+    for (var i = seen; i < iv.length; i++) { var pr2 = pc.addIceCandidate(iv[i]); if (pr2 && pr2.catch) pr2.catch(function(){}); }
+    LV.iceSeen[vuid] = iv.length;
+  });
+  Object.keys(LV.pendingIce).forEach(function(vuid){
+    if (LV.pendingIce[vuid].length) { s.iceB = s.iceB || {}; s.iceB[vuid] = (s.iceB[vuid] || []).concat(LV.pendingIce[vuid]); LV.pendingIce[vuid] = []; dirty = true; }
+  });
+  if (dirty) { s.t = Date.now(); await liveSet(d); }
+  lvCountUpdate();
+}
+async function watchLive(postId){
+  if (!me) return;
+  if (!window.RTCPeerConnection) { alert('Live viewing is not supported in this browser view \u2014 try opening HPSocial in Safari or Chrome.'); return; }
+  LV.role = 'watch'; LV.postId = postId; LV.pc = null; LV.iceSeen = {}; LV.pendingIce = {}; LV.iceDirty = false;
+  addPostViewer(postId, me.id);
+  await liveMutate(function(d){
+    var s = d.sessions[postId] || (d.sessions[postId] = { want: [], offers: {}, answers: {}, iceB: {}, iceV: {}, t: Date.now() });
+    s.want = s.want || [];
+    if (s.want.indexOf(me.id) < 0) s.want.push(me.id);
+  });
+  openLivePanel();
+  LV.timer = setInterval(lvTickV, 1500);
+  lvTickV();
+}
+async function lvTickV(){
+  if (!LV.postId || !me) return;
+  var post = S.posts.filter(function(x){ return x.id === LV.postId; })[0];
+  if (post && !post.liveOn) { lvStopWatch('The stream has ended.'); return; }
+  var d = await liveGet();
+  var s = d.sessions && d.sessions[LV.postId]; if (!s) return;
+  var off = s.offers && s.offers[me.id];
+  if (off && !LV.pc) {
+    var pc = null;
+    try { pc = new RTCPeerConnection(ICE_SERVERS); } catch (e) { return; }
+    LV.pc = pc;
+    pc.ontrack = function(e){ var v = document.getElementById('lvVideo'); if (v && e.streams && e.streams[0]) v.srcObject = e.streams[0]; };
+    pc.onicecandidate = function(e){ if (e.candidate) { LV.pendingIce[me.id] = LV.pendingIce[me.id] || []; LV.pendingIce[me.id].push(e.candidate); LV.iceDirty = true; } };
+    try {
+      await pc.setRemoteDescription(off);
+      var ans = await pc.createAnswer();
+      await pc.setLocalDescription(ans);
+      await liveMutate(function(dd){ var ss = dd.sessions[LV.postId]; if (ss) { ss.answers = ss.answers || {}; ss.answers[me.id] = pc.localDescription; } });
+    } catch (e) {}
+  }
+  if (LV.pc) {
+    var ib = (s.iceB && s.iceB[me.id]) || []; var seen = LV.iceSeen[me.id] || 0;
+    for (var i = seen; i < ib.length; i++) { var pr = LV.pc.addIceCandidate(ib[i]); if (pr && pr.catch) pr.catch(function(){}); }
+    LV.iceSeen[me.id] = ib.length;
+    if (LV.iceDirty) {
+      LV.iceDirty = false;
+      await liveMutate(function(dd){ var ss = dd.sessions[LV.postId]; if (ss) { ss.iceV = ss.iceV || {}; var mine = LV.pendingIce[me.id] || []; if (mine.length) { ss.iceV[me.id] = (ss.iceV[me.id] || []).concat(mine); LV.pendingIce[me.id] = []; } } });
+    }
+  }
+}
+function lvStopWatch(msg){
+  lvCleanupMedia();
+  closeLivePanel();
+  if (msg) alert(msg);
+}
+async function leaveLive(){
+  var pid = LV.postId;
+  if (pid && me) { try { await liveMutate(function(d){ var s = d.sessions[pid]; if (s && s.want) s.want = s.want.filter(function(x){ return x !== me.id; }); }); } catch (e) {} }
+  lvCleanupMedia();
+  closeLivePanel();
+}
+async function endLive(){
+  var pid = LV.postId;
+  lvCleanupMedia();
+  closeLivePanel();
+  if (pid) {
+    var p = S.posts.filter(function(x){ return x.id === pid; })[0];
+    if (p && p.liveOn) { p.liveOn = false; await push(); render(); }
+    try { await liveMutate(function(d){ delete d.sessions[pid]; }); } catch (e) {}
+  }
+}
+
 /* ---- Jobs pinpoint (device-local only: your location is never uploaded) ---- */
 var pin = null; try { pin = JSON.parse(localStorage.getItem('hps-pin') || 'null'); } catch (e) { pin = null; }
 var pinRadius = 0;
@@ -991,6 +1220,20 @@ async function doPost(){
   var p = { id: uid('p'), uid: me.id, type: cmpType, text: text, likes: [], likesTs: 0, comments: [], commentsTs: 0, interested: [], reports: [], apps: [], ts: Date.now() };
   if (cmpType === 'shout') { var s = document.getElementById('cmp-to'); p.toUid = s && s.value ? s.value : null; }
   if (cmpType === 'job') { var r = document.getElementById('cmp-role'); p.jobRole = r ? r.value : 'Team member'; var le = document.getElementById('cmp-loc'); p.loc = le ? le.value.trim() : ''; if (p.loc) { var gc0 = geoCacheGet(p.loc); if (gc0) { p.lat = gc0.lat; p.lng = gc0.lng; } else { geocodeCity(p.loc).then(function(g){ if (g) { p.lat = g.lat; p.lng = g.lng; push(); } }); } } drafts.cmpLoc = ''; view = 'feed'; feedFilter = 'jobs'; }
+  if (cmpType === 'live') {
+    p.type = 'live'; p.liveOn = true; p.viewers = []; p.liveMode = liveMode;
+    if (liveMode === 'yt') {
+      var yv = document.getElementById('cmp-yt'); var yid = ytId(yv ? yv.value : '');
+      if (!yid) { alert('That does not look like a YouTube link — paste the full link to your live video.'); return; }
+      p.ytId = yid;
+      S.posts.unshift(p); drafts.cmp = ''; await push(); render(); return;
+    }
+    var got = await liveCamStart();
+    if (!got) return;
+    S.posts.unshift(p); drafts.cmp = ''; await push(); render();
+    await startBroadcast(p.id);
+    return;
+  }
   S.posts.unshift(p); drafts.cmp = ''; await push(); render();
 }
 async function toggleLike(id){
