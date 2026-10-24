@@ -186,6 +186,9 @@
   #splash .ss { color:#b8c7d9; font-size:14.5px; font-weight:700; letter-spacing:.4px; }
   #splash .shint { color:#e9d9a0; font-size:13.5px; font-weight:800; letter-spacing:.3px; opacity:0; transition:opacity .4s ease; }
   #splash .shint.show { opacity:1; animation:hpsPulse 1.2s ease-in-out infinite; }
+  #introVid { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; background:#0d2138; }
+  #introSkip { position:absolute; left:0; right:0; bottom:calc(20px + env(safe-area-inset-bottom)); text-align:center; color:#e9d9a0; font-size:13.5px; font-weight:800; letter-spacing:.3px; text-shadow:0 1px 8px rgba(0,0,0,.65); pointer-events:none; }
+  #introSnd { position:absolute; right:14px; bottom:calc(54px + env(safe-area-inset-bottom)); border:1.5px solid rgba(255,255,255,.55); background:rgba(13,33,56,.55); color:#fff; border-radius:999px; padding:8px 13px; font-size:14px; font-weight:800; cursor:pointer; font-family:inherit; }
   @keyframes hpsPulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.07); } }
   @media (prefers-reduced-motion: reduce) { #splashBell { animation:none; } #splash .ringwrap:before, #splash .ringwrap:after { animation:none; display:none; } }
 
@@ -195,7 +198,7 @@
 </style>
 </head>
 <body>
-<div id="splash"><div class="ringwrap"><img id="splashBell" src="bell-mark.png" alt=""></div><div class="st"><b>HPS</b>ocial</div><div class="ss">Where Hospitality Connects</div><div class="shint" id="splashHint">🔔 Tap the bell to hear it ring</div></div>
+<div id="splash"><video id="introVid" src="intro.mp4" autoplay muted playsinline preload="auto" poster="bell-mark.png"></video><button id="introSnd" onclick="event.stopPropagation();introSound(this)">🔇 Muted</button><div id="introSkip">Tap anywhere to skip</div></div>
 <div id="col">
   <div class="appbar"><img src="bell-mark.png" alt=""><div class="t"><b>HPS</b>ocial</div><div class="who" id="whoami"></div></div>
   <div class="sync" id="syncbadge">● Connecting…</div>
@@ -1136,68 +1139,31 @@ document.addEventListener('visibilitychange', function(){ if (document.visibilit
 /* ---- opening splash: swinging bell + ring ---- */
 var splashDone = false;
 var hpsGesture = false;
-function scheduleDings(ctx){
-  function ding(t0){
-    var partials = [[2093, .50], [2637, .30], [3520, .16], [5233, .07]];
-    partials.forEach(function(p){
-      var o = ctx.createOscillator(), g = ctx.createGain();
-      o.type = 'sine'; o.frequency.value = p[0];
-      g.gain.setValueAtTime(0.0001, t0);
-      g.gain.linearRampToValueAtTime(p[1] * .45, t0 + .004);
-      g.gain.exponentialRampToValueAtTime(.0001, t0 + .9);
-      o.connect(g); g.connect(ctx.destination);
-      o.start(t0); o.stop(t0 + 1);
-    });
-  }
-  var t = ctx.currentTime + .05;
-  ding(t); ding(t + .38);
-}
-function ringBell(){
-  try {
-    var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return false;
-    var ctx = ringBell.ctx || (ringBell.ctx = new AC());
-    if (ctx.state === 'suspended') {
-      var p = null; try { p = ctx.resume(); } catch (e) {}
-      if (p && p.catch) p.catch(function(){});
-      if (!hpsGesture) return false;
-    }
-    scheduleDings(ctx);
-    return true;
-  } catch (e) { return false; }
-}
 function hideSplash(){
   if (splashDone) return; splashDone = true;
   var s = document.getElementById('splash'); if (!s) return;
   s.classList.add('gone');
   setTimeout(function(){ if (s.parentNode) s.parentNode.removeChild(s); }, 500);
 }
-var bellRung = false, splashStart = Date.now();
-function splashTap(){
-  hpsGesture = true;
-  if (bellRung) { hideSplash(); return; }
-  if (ringBell()) {
-    bellRung = true;
-    var h = document.getElementById('splashHint'); if (h) h.classList.remove('show');
-    setTimeout(hideSplash, 650);
-  } else hideSplash();
+function introSound(btn){
+  var v = document.getElementById('introVid'); if (!v) return;
+  v.muted = !v.muted;
+  if (!v.muted) { try { var pr = v.play(); if (pr && pr.catch) pr.catch(function(){}); } catch (e) {} }
+  btn.textContent = v.muted ? '\uD83D\uDD07 Muted' : '\uD83D\uDD0A Sound on';
 }
 (function splash(){
   var s = document.getElementById('splash'); if (!s) return;
-  s.addEventListener('click', splashTap);
-  if (ringBell()) { bellRung = true; }
-  else {
-    var unlock = function(){
-      hpsGesture = true;
-      if (Date.now() - splashStart < 20000 && ringBell()) {
-        bellRung = true;
-        ['pointerdown','touchend','click'].forEach(function(ev){ document.removeEventListener(ev, unlock); });
-        var h = document.getElementById('splashHint'); if (h) h.classList.remove('show');
-      }
-    };
-    ['pointerdown','touchend','click'].forEach(function(ev){ document.addEventListener(ev, unlock); });
-    setTimeout(function(){ var h = document.getElementById('splashHint'); if (h && !bellRung) h.classList.add('show'); }, 700);
-  }
-  setTimeout(hideSplash, 2600);
+  var seen = false;
+  try { seen = !!sessionStorage.getItem('hps-intro'); sessionStorage.setItem('hps-intro', '1'); } catch (e) {}
+  if (seen) { hideSplash(); return; }
+  s.addEventListener('click', hideSplash);
+  var v = document.getElementById('introVid');
+  if (v) {
+    v.addEventListener('ended', hideSplash);
+    v.addEventListener('error', hideSplash, true);
+    try { var pr = v.play(); if (pr && pr.catch) pr.catch(function(){}); } catch (e) {}
+  } else hideSplash();
+  setTimeout(hideSplash, 11000);
 })();
 </script>
 <script>
