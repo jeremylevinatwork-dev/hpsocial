@@ -1,7 +1,24 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-build="hps-20261024-1226">
 <head>
 <meta charset="utf-8">
+<script>
+/* Self-update guard: if the copy on this device is older than the live build,
+   reload once onto the new build. Also nudges the offline shell to check for
+   an update, so a stuck cached copy heals itself. */
+(function(){ try {
+  var myBuild = document.documentElement.getAttribute('data-build');
+  if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistration().then(function (reg) { if (reg) reg.update(); }).catch(function(){}); }
+  if (!myBuild) return;
+  if (sessionStorage.getItem('hpb') === myBuild) return;
+  fetch((location.href.split('?')[0] || 'app.html') + '?_cb=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (t) {
+    var m = t.match(/data-build="([^"]+)"/);
+    if (m && m[1] !== myBuild) { sessionStorage.setItem('hpb', m[1]); location.reload(); }
+    else sessionStorage.setItem('hpb', myBuild);
+  }).catch(function () {});
+} catch (e) {} })();
+</script>
+
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>HPSocial — Hospitality Professionals Social</title>
 <style>
