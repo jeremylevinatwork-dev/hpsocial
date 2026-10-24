@@ -817,10 +817,13 @@ function ensureLivePanel(){
   var d = document.createElement('div');
   d.id = 'livePanel';
   d.style.cssText = 'display:none;position:fixed;inset:0;z-index:1200;background:#081a2e;flex-direction:column;';
-  d.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;color:#fff"><span id="lvTitle" style="font-weight:800">\uD83D\uDD34 LIVE</span><span id="lvCount" style="color:#b8c7d9;font-size:13.5px"></span><button id="lvHide" style="margin-left:auto;background:transparent;border:1.5px solid #54687e;color:#fff;border-radius:9px;padding:9px 13px;font-weight:800;cursor:pointer;font-family:inherit">Hide</button><button id="lvEnd" style="background:#c62828;color:#fff;border:0;border-radius:9px;padding:10px 16px;font-weight:800;cursor:pointer;font-family:inherit">End</button></div><video id="lvVideo" autoplay playsinline style="flex:1;width:100%;min-height:0;background:#000;object-fit:contain"></video><div style="padding:10px 14px;color:#8496ab;font-size:12.5px">Live in HPSocial \u00B7 app streams are not recorded</div>';
+  d.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;color:#fff"><span id="lvTitle" style="font-weight:800">\uD83D\uDD34 LIVE</span><span id="lvCount" style="color:#b8c7d9;font-size:13.5px"></span><button id="lvHide" style="margin-left:auto;background:transparent;border:1.5px solid #54687e;color:#fff;border-radius:9px;padding:9px 13px;font-weight:800;cursor:pointer;font-family:inherit">Hide</button><button id="lvEnd" style="background:#c62828;color:#fff;border:0;border-radius:9px;padding:10px 16px;font-weight:800;cursor:pointer;font-family:inherit">End</button></div><video id="lvVideo" autoplay playsinline style="flex:1;width:100%;min-height:0;background:#000;object-fit:contain"></video><div id="lvComments" style="max-height:30%;overflow-y:auto;padding:6px 14px;color:#dbe6f2;font-size:13.5px;line-height:1.45"></div><div style="display:flex;gap:8px;padding:10px 14px;align-items:center"><button id="lvLike" style="background:#122c47;border:1.5px solid #29425e;color:#fff;border-radius:999px;padding:9px 14px;font-weight:800;cursor:pointer;font-family:inherit;font-size:14px">🤍 0</button><input id="lvCin" placeholder="Say something…" style="flex:1;background:#122c47;border:1.5px solid #29425e;color:#fff;border-radius:999px;padding:10px 14px;font-family:inherit;font-size:14px;outline:none"><button id="lvSend" style="background:#c9a227;color:#081a2e;border:0;border-radius:999px;padding:10px 16px;font-weight:800;cursor:pointer;font-family:inherit">Send</button></div><div style="padding:10px 14px;color:#8496ab;font-size:12.5px">Live in HPSocial \u00B7 app streams are not recorded</div>';
   document.body.appendChild(d);
   document.getElementById('lvEnd').onclick = function(){ if (LV.role === 'host') endLive(); else leaveLive(); };
   document.getElementById('lvHide').onclick = function(){ closeLivePanel(); };
+  document.getElementById('lvSend').onclick = function(){ lvSendComment(); };
+  document.getElementById('lvLike').onclick = function(){ lvToggleLike(); };
+  document.getElementById('lvCin').addEventListener('keydown', function(e){ if (e.key === 'Enter') lvSendComment(); });
 }
 function openLivePanel(){
   ensureLivePanel();
@@ -828,6 +831,8 @@ function openLivePanel(){
   var v = document.getElementById('lvVideo');
   if (LV.role === 'host' && LV.stream && v) { v.srcObject = LV.stream; v.muted = true; }
   lvPanelState();
+  lvStartSync();
+  lvRenderComments();
 }
 function closeLivePanel(){ var d = document.getElementById('livePanel'); if (d) d.style.display = 'none'; }
 function lvPanelState(){
@@ -854,6 +859,8 @@ function lvCleanupMedia(){
   LV.pcs = {};
   if (LV.pc) { try { LV.pc.close(); } catch (e) {} LV.pc = null; }
   if (LV.stream) { LV.stream.getTracks().forEach(function(tr){ try { tr.stop(); } catch (e) {} }); LV.stream = null; }
+  if (LV.stateTimer) { clearInterval(LV.stateTimer); LV.stateTimer = null; }
+  LV.rec = null; LV.chunks = [];
   LV.postId = null; LV.role = null; LV.iceSeen = {}; LV.pendingIce = {}; LV.iceDirty = false;
 }
 async function liveCamStart(){
@@ -877,6 +884,14 @@ async function startBroadcast(postId){
   }
   LV.role = 'host'; LV.postId = postId; LV.pcs = {}; LV.iceSeen = {}; LV.pendingIce = {};
   await liveMutate(function(d){ d.sessions[postId] = { want: [], offers: {}, answers: {}, iceB: {}, iceV: {}, t: Date.now() }; });
+  try {
+    if (window.MediaRecorder && LV.stream) {
+      LV.chunks = [];
+      LV.rec = new MediaRecorder(LV.stream);
+      LV.rec.ondataavailable = function(e){ if (e.data && e.data.size) LV.chunks.push(e.data); };
+      LV.rec.start(1000);
+    }
+  } catch (e) { LV.rec = null; }
   openLivePanel();
   LV.timer = setInterval(lvTickB, 1500);
 }
@@ -911,6 +926,7 @@ async function lvTickB(){
   });
   if (dirty) { s.t = Date.now(); await liveSet(d); }
   lvCountUpdate();
+  lvRenderComments();
 }
 async function watchLive(postId){
   if (!me) return;
@@ -969,6 +985,16 @@ async function leaveLive(){
 }
 async function endLive(){
   var pid = LV.postId;
+  if (LV.rec) {
+    var rec = LV.rec; LV.rec = null;
+    rec.onstop = function(){ finishEndLive(pid); };
+    try { rec.stop(); } catch (e) { return finishEndLive(pid); }
+    return Promise.resolve();
+  }
+  return finishEndLive(pid);
+}
+async function finishEndLive(pid){
+  var chunks = LV.chunks || [];
   lvCleanupMedia();
   closeLivePanel();
   if (pid) {
@@ -976,6 +1002,51 @@ async function endLive(){
     if (p && p.liveOn) { p.liveOn = false; await push(); render(); }
     try { await liveMutate(function(d){ delete d.sessions[pid]; }); } catch (e) {}
   }
+  if (chunks.length && window.confirm('Stream ended. Save the recording to this device? (Recordings are not stored in HPSocial.)')) {
+    try {
+      var blob = new Blob(chunks, { type: 'video/webm' });
+      LV.lastBlob = blob;
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'hpsocial-live.webm';
+      document.body.appendChild(a); a.click(); a.remove();
+    } catch (e) {}
+  }
+}
+
+/* ===== Live panel: comments, reactions, fast sync ===== */
+function lvRenderComments(){
+  var box = document.getElementById('lvComments'); if (!box || !LV.postId) return;
+  var p = S.posts.filter(function(x){ return x.id === LV.postId; })[0]; if (!p) return;
+  var cs = p.comments || [];
+  var lk = document.getElementById('lvLike');
+  if (lk && me) lk.textContent = ((p.likes || []).indexOf(me.id) >= 0 ? '\u2764\uFE0F' : '\uD83E\uDD0D') + ' ' + (p.likes || []).length;
+  var sig = cs.length + ':' + (cs.length ? cs[cs.length - 1].t : 0);
+  if (sig === LV._csig) return;
+  LV._csig = sig;
+  box.innerHTML = cs.length ? cs.slice(-30).map(function(c){ return '<div style="margin:3px 0"><b style="color:#fff">' + esc(c.n || 'Member') + '</b> ' + esc(c.text) + '</div>'; }).join('') : '<div style="color:#8496ab">No comments yet \u2014 say hello \uD83D\uDC4B</div>';
+  box.scrollTop = box.scrollHeight;
+}
+async function lvSendComment(){
+  var inp = document.getElementById('lvCin'); var text = inp ? inp.value.trim() : '';
+  if (!text || !LV.postId || !me) return;
+  var p = S.posts.filter(function(x){ return x.id === LV.postId; })[0]; if (!p) return;
+  p.comments = p.comments || [];
+  p.comments.push({ uid: me.id, n: me.name, t: Date.now(), text: text }); p.commentsTs = Date.now();
+  inp.value = ''; LV._csig = null;
+  await push(); lvRenderComments();
+}
+async function lvToggleLike(){
+  if (!LV.postId) return;
+  await toggleLike(LV.postId);
+  LV._csig = null; lvRenderComments();
+}
+function lvStartSync(){
+  if (LV.stateTimer) return;
+  LV.stateTimer = setInterval(async function(){
+    try { var st = await sbStamp(); if (st !== null && st !== undefined && st !== lastTs) await pull(); } catch (e) {}
+    lvRenderComments();
+  }, 3000);
 }
 
 /* ---- Jobs pinpoint (device-local only: your location is never uploaded) ---- */
