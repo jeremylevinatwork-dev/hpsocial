@@ -188,7 +188,7 @@
   #splash .shint.show { opacity:1; animation:hpsPulse 1.2s ease-in-out infinite; }
   #introVid { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; background:#0d2138; }
   #introSkip { position:absolute; left:0; right:0; bottom:calc(20px + env(safe-area-inset-bottom)); text-align:center; color:#e9d9a0; font-size:13.5px; font-weight:800; letter-spacing:.3px; text-shadow:0 1px 8px rgba(0,0,0,.65); pointer-events:none; }
-  #introSnd { position:absolute; right:14px; bottom:calc(54px + env(safe-area-inset-bottom)); border:1.5px solid rgba(255,255,255,.55); background:rgba(13,33,56,.55); color:#fff; border-radius:999px; padding:8px 13px; font-size:14px; font-weight:800; cursor:pointer; font-family:inherit; }
+  #introSnd { position:absolute; left:50%; transform:translateX(-50%); bottom:calc(58px + env(safe-area-inset-bottom)); z-index:3; border:2px solid #c9a227; background:#0f2c4c; color:#fff; border-radius:999px; padding:12px 20px; font-size:15px; font-weight:800; cursor:pointer; font-family:inherit; box-shadow:0 6px 18px rgba(0,0,0,.45); white-space:nowrap; }
   @keyframes hpsPulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.07); } }
   @media (prefers-reduced-motion: reduce) { #splashBell { animation:none; } #splash .ringwrap:before, #splash .ringwrap:after { animation:none; display:none; } }
 
@@ -198,7 +198,7 @@
 </style>
 </head>
 <body>
-<div id="splash"><video id="introVid" src="intro.mp4" autoplay muted playsinline preload="auto" poster="bell-mark.png"></video><button id="introSnd" onclick="event.stopPropagation();introSound(this)">🔇 Muted</button><div id="introSkip">Tap anywhere to skip</div></div>
+<div id="splash"><video id="introVid" src="intro.mp4" autoplay muted playsinline preload="auto" poster="bell-mark.png"></video><button id="introSnd" onclick="event.stopPropagation();introSound(this)">🔇 Sound OFF — tap for sound</button><div id="introSkip">Tap anywhere to skip</div></div>
 <div id="col">
   <div class="appbar"><img src="bell-mark.png" alt=""><div class="t"><b>HPS</b>ocial</div><div class="who" id="whoami"></div></div>
   <div class="sync" id="syncbadge">● Connecting…</div>
@@ -367,10 +367,20 @@ async function sbGet(){
   var rows = await res.json();
   return (rows.length && rows[0].data) ? rows[0].data : null;
 }
+var lastTs = null, pullTick = 0;
 async function sbSet(data){
+  data._ts = Date.now();
   var h = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' };
   var res = await fetch(SB_URL + '/rest/v1/app_records', { method: 'POST', headers: h, body: JSON.stringify([{ id: ROW, app: 'hpsocial', data: data }]) });
   if (!res.ok) throw new Error('write ' + res.status);
+  lastTs = data._ts;
+}
+async function sbStamp(){
+  var h = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
+  var res = await fetch(SB_URL + '/rest/v1/app_records?id=eq.' + ROW + '&select=data->_ts', { headers: h });
+  if (!res.ok) throw new Error('stamp ' + res.status);
+  var rows = await res.json();
+  return (rows.length && rows[0]) ? rows[0]._ts : null;
 }
 function mergePost(lp, cp){
   var out = (lp.ts >= cp.ts) ? lp : cp;
@@ -445,7 +455,13 @@ function loadCache(){ try { var c = localStorage.getItem('hps-cache'); if (c) S 
 function setBadge(){ var b = document.getElementById('syncbadge'); if (navigator.onLine === false) { b.textContent = '● Offline — showing saved copy, will sync when you are back'; b.className = 'sync off'; } else { b.textContent = '● Synced with the HPSocial cloud'; b.className = 'sync'; } }
 async function pull(){
   try {
+    pullTick++;
+    if (typeof lastTs === 'number' && pullTick % 20 !== 0) {
+      var st = await sbStamp();
+      if (typeof st === 'number' && st === lastTs) return;
+    }
     var c = await sbGet();
+    if (c && typeof c._ts === 'number') lastTs = c._ts;
     if (c) { S = unionState(S, c); if (me) me = memberById(me.id) || me; saveCache(); render(); }
     setBadge();
   } catch (e) { var b = document.getElementById('syncbadge'); b.textContent = '● Offline — showing saved copy'; b.className = 'sync off'; }
@@ -1149,7 +1165,7 @@ function introSound(btn){
   var v = document.getElementById('introVid'); if (!v) return;
   v.muted = !v.muted;
   if (!v.muted) { try { var pr = v.play(); if (pr && pr.catch) pr.catch(function(){}); } catch (e) {} }
-  btn.textContent = v.muted ? '\uD83D\uDD07 Muted' : '\uD83D\uDD0A Sound on';
+  btn.textContent = v.muted ? '\uD83D\uDD07 Sound OFF — tap for sound' : '\uD83D\uDD0A Sound ON — tap to mute';
 }
 (function splash(){
   var s = document.getElementById('splash'); if (!s) return;
@@ -1159,6 +1175,7 @@ function introSound(btn){
   s.addEventListener('click', hideSplash);
   var v = document.getElementById('introVid');
   if (v) {
+    v.muted = true; v.defaultMuted = true;
     v.addEventListener('ended', hideSplash);
     v.addEventListener('error', hideSplash, true);
     try { var pr = v.play(); if (pr && pr.catch) pr.catch(function(){}); } catch (e) {}
